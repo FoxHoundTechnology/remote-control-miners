@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/gin-gonic/gin v1.9.1
-	google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
 )
