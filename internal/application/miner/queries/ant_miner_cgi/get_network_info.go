@@ -21,6 +21,6 @@ type NetworkInfoResponse struct {
 	IPAddress  string `json:"ip_address"`
 }
 
-func AntMinerCGIGetNetworkInfo(ipAddress string) (*getNetworkInfoResponse, error) {
+func AntMinerCGIGetNetworkInfo(ipAddress string) (*NetworkInfoResponse, error) {
 	return nil, nil
 }
