@@ -4,8 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	alert "foxhound/internal/application/alert/domain"
-
-	fleet "foxhound/internal/infrastructure/database/repositories/fleet"
+	miner "foxhound/internal/infrastructure/database/repositories/miner"
 )
 
 // TODO: fix schema
@@ -17,5 +16,5 @@ type Alert struct {
 	Condition alert.AlertConditionType `gorm:"type:alert_condition"`
 	Action    alert.AlertActionType    `gorm:"type:alert_action"`
 	Layer     alert.AlertLayerType     `gorm:"type:alert_layer"`
-	Fleets    []*fleet.Fleet           `gorm:"many2many:alert_fleet;"` // self-referential many-to-many
+	Fleets    []*miner.Fleet           `gorm:"many2many:alert_fleet;"` // self-referential many-to-many
 }

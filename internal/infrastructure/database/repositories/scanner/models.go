@@ -5,7 +5,7 @@ import (
 
 	domain "foxhound/internal/application/scanner/domain"
 
-	fleet "foxhound/internal/infrastructure/database/repositories/fleet"
+	miner "foxhound/internal/infrastructure/database/repositories/miner"
 )
 
 type Scanner struct {
@@ -18,5 +18,5 @@ type Scanner struct {
 	Owner     string
 	Location  string
 
-	Fleet fleet.Fleet // foreign key to Fleet, one-to-one
+	Fleet miner.Fleet // foreign key to Fleet, one-to-one
 }
