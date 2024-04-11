@@ -7,7 +7,6 @@ import (
 
 	// TODO: db migration/seed
 	alert "foxhound/internal/infrastructure/database/repositories/alert"
-	fleet "foxhound/internal/infrastructure/database/repositories/fleet"
 	miner "foxhound/internal/infrastructure/database/repositories/miner"
 	scanner "foxhound/internal/infrastructure/database/repositories/scanner"
 
@@ -18,18 +17,40 @@ import (
 func main() {
 
 	postgresDB := postgres.Init()
-	DevMigrate(postgresDB)
+	devMigrate(postgresDB)
 
 	err := postgresDB.AutoMigrate(
 		&alert.Alert{},
 		&scanner.Scanner{},
 		&miner.Miner{},
-		&fleet.Fleet{},
+		&miner.Pool{},
+		&miner.Temperature{},
+		&miner.TemperatureSensor{},
+		&miner.Fan{},
+		&miner.FanSensor{},
+		&miner.Fleet{},
 	)
 
 	if err != nil {
 		log.Fatalf("Failed to migrate the database: %v", err)
 	}
+
+	// antMinerCGI := service.AntminerCGI{
+	// 	Miner:       &domain.Miner{},
+	// 	Mode:        domain.Mode(domain.NormalMode),
+	// 	Status:      domain.Status(domain.Online),
+	// 	Config:      &domain.Config{},
+	// 	Stats:       &domain.Stats{},
+	// 	Pools:       &domain.Pool{},
+	// 	Temperature: &domain.Temperature{},
+	// 	Fan:         &domain.Fan{},
+	// }
+	// list := []domain.MinerController{
+	// 	&antMinerCGI,
+	// }
+	// for _, miner := range list {
+	// 	fmt.Println(miner)
+	// }
 
 	router := gin.Default()
 
@@ -38,7 +59,8 @@ func main() {
 }
 
 // TODO: migration/seed
-func DevMigrate(db *gorm.DB) {
+func devMigrate(db *gorm.DB) {
+
 	err := db.Exec(("CREATE TYPE alert_threshold AS ENUM ('count', 'rate')"))
 	if err != nil {
 		fmt.Println("type already exists (expected)")
@@ -55,11 +77,6 @@ func DevMigrate(db *gorm.DB) {
 	}
 
 	err = db.Exec("CREATE TYPE alert_layer AS ENUM ('info', 'warning', 'error', 'fatal')")
-	if err != nil {
-		fmt.Println("type already exists (expected)")
-	}
-
-	err = db.Exec("CREATE TYPE miner_status AS ENUM ('online', 'offline', 'disabled', 'warning', 'error')")
 	if err != nil {
 		fmt.Println("type already exists (expected)")
 	}
