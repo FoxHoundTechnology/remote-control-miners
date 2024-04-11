@@ -4,22 +4,22 @@ import (
 	"time"
 )
 
-type Mode string
+type Mode int
 
 const (
-	NormalMode   Mode = "normal"
-	SleepMode    Mode = "sleep"
-	LowPowerMode Mode = "low_power"
+	NormalMode   Mode = iota // 0
+	SleepMode                // 1
+	LowPowerMode             // 2
 )
 
-type Status string
+type Status int
 
 const (
-	Online   Status = "online"
-	Offline  Status = "offline"
-	Disabled Status = "disabled"
-	Error    Status = "error"
-	Warning  Status = "warning"
+	Online   Status = iota // 0
+	Offline                // 1
+	Disabled               // 2
+	Error                  // 3
+	Warning                // 4
 )
 
 type Config struct {
@@ -37,6 +37,10 @@ type Stats struct {
 	LastUpdated time.Time // UTC timestamp
 }
 
+type Pools struct {
+	Pools []Pool
+}
+
 type Pool struct {
 	Url  string
 	User string
@@ -48,7 +52,7 @@ type Fleet struct {
 }
 
 type Temperature struct {
-	Temperature []TemperatureSensor
+	TemperatureSensors []TemperatureSensor
 }
 
 type TemperatureSensor struct {
@@ -57,7 +61,7 @@ type TemperatureSensor struct {
 }
 
 type Fan struct {
-	Fan []FanSensor
+	FanSensors []FanSensor
 }
 
 type FanSensor struct {
