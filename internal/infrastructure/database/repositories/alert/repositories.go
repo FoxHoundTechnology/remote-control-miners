@@ -6,6 +6,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: association
+// TODO: preload
+
 type AlertRepository struct {
 	db *gorm.DB
 }

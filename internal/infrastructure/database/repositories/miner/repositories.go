@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: association
+// TODO: preload
 type MinerRepositoryInterface interface {
 	Create(ctx context.Context, miner *Miner) error
 	FindByID(ctx context.Context, id uint) (*Miner, error)
@@ -46,5 +48,11 @@ func (r *MinerRepository) Delete(ctx context.Context, id uint) error {
 func (r *MinerRepository) List(ctx context.Context) ([]*Miner, error) {
 	var miners []*Miner
 	result := r.db.WithContext(ctx).Find(&miners)
+	return miners, result.Error
+}
+
+func (r *MinerRepository) ListByFleetID(ctx context.Context, fleetID uint) ([]*Miner, error) {
+	var miners []*Miner
+	result := r.db.WithContext(ctx).Where("fleet_id = ?", fleetID).Find(&miners)
 	return miners, result.Error
 }
