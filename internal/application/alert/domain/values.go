@@ -1,34 +1,37 @@
 package alert
 
-type AlertThresholdType string
-type AlertConditionType string
-type AlertActionType string
-type AlertLayerType uint8
+type AlertThresholdType int
 
 const (
-	ThresholdCount AlertThresholdType = "count"
-	ThresholdRate  AlertThresholdType = "rate"
+	ThresholdCount AlertThresholdType = iota // 0
+	ThresholdRate                            // 1
 )
 
-const (
-	Hashrate          AlertConditionType = "hashrate"
-	Temperature       AlertConditionType = "temperature"
-	FanSpeed          AlertConditionType = "fan_speed"
-	PoolShares        AlertConditionType = "pool_shares"
-	OfflineMiners     AlertConditionType = "offline_miners"
-	MissingHashboards AlertConditionType = "missing_hashboards"
-)
+type AlertConditionType int
 
 const (
-	Reboot     AlertActionType = "reboot"
-	Sleep      AlertActionType = "sleep"
-	Normal     AlertActionType = "normal" // turn on
-	ChangePool AlertActionType = "change_pool"
+	Hashrate          AlertConditionType = iota // 0
+	Temperature                                 // 1
+	FanSpeed                                    // 2
+	PoolShares                                  // 3
+	OfflineMiners                               // 4
+	MissingHashboards                           // 5
 )
 
+type AlertActionType int
+
 const (
-	InfoAlert    AlertLayerType = 1
-	WarningAlert AlertLayerType = 2
-	ErrorAlert   AlertLayerType = 3
-	FataltAlert  AlertLayerType = 4
+	Reboot     AlertActionType = iota // 0
+	Sleep                             // 1
+	Normal                            // 2
+	ChangePool                        // 3
+)
+
+type AlertLayerType int
+
+const (
+	InfoAlert    AlertLayerType = iota // 0
+	WarningAlert                       // 1
+	ErrorAlert                         // 2
+	FataltAlert                        // 3
 )
