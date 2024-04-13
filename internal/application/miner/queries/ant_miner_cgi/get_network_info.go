@@ -1,8 +1,8 @@
-package queries
+package ant_miner_cgi
 
 // cgi-bin/get_network_info.cgi
 
-type getNetworkInfoResponse struct {
+type rawGetNetworkInfoResponse struct {
 	NetType        string `json:"nettype"`
 	NetDevice      string `json:"netdevice"`
 	MacAddress     string `json:"macaddr"`
@@ -21,6 +21,7 @@ type NetworkInfoResponse struct {
 	IPAddress  string `json:"ip_address"`
 }
 
+// TODO: default values for response objects
 func AntMinerCGIGetNetworkInfo(ipAddress string) (*NetworkInfoResponse, error) {
 	return nil, nil
 }
