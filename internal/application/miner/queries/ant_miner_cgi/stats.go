@@ -5,6 +5,7 @@ import (
 )
 
 // cgi-bin/stats.cgi
+// TODO: default values for response object
 
 type rawGetStatsResponse struct {
 	Status Status  `json:"STATUS"`
@@ -70,7 +71,6 @@ type HashBoard struct {
 	TempChip  []int   `json:"temp_chip"`
 }
 
-// TODO: default values for response object
 func AntMinerCGIGetStats(ipAddress string) (*StatsResponse, error) {
 	return &StatsResponse{}, nil
 }
