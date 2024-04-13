@@ -61,27 +61,7 @@ func main() {
 // TODO: migration/seed
 func devMigrate(db *gorm.DB) {
 
-	err := db.Exec(("CREATE TYPE alert_threshold AS ENUM ('count', 'rate')"))
-	if err != nil {
-		fmt.Println("type already exists (expected)")
-	}
-
-	err = db.Exec("CREATE TYPE alert_condition AS ENUM ('hashrate', 'temperature', 'fan_speed', 'pool_shares', 'offline_miners', 'missing_hashboards')")
-	if err != nil {
-		fmt.Println("type already exists (expected)")
-	}
-
-	err = db.Exec("CREATE TYPE alert_action AS ENUM ('reboot', 'sleep', 'normal', 'change_pool')")
-	if err != nil {
-		fmt.Println("type already exists (expected)")
-	}
-
-	err = db.Exec("CREATE TYPE alert_layer AS ENUM ('info', 'warning', 'error', 'fatal')")
-	if err != nil {
-		fmt.Println("type already exists (expected)")
-	}
-
-	err = db.Exec("CREATE TYPE miner_type AS ENUM ('antimner_cgi')")
+	err := db.Exec("CREATE TYPE miner_type AS ENUM ('antimner_cgi')")
 	if err != nil {
 		fmt.Println("type already exists (expected)")
 	}
