@@ -2,6 +2,7 @@ package service
 
 import (
 	miner "foxhound/internal/application/miner/domain"
+
 	queries "foxhound/internal/application/miner/queries/ant_miner_cgi"
 )
 
@@ -17,6 +18,7 @@ type AntminerCGI struct {
 	// TODO: cgi-specific fields
 }
 
+// TODO: add contexts of miner API responses
 // regular miner functions
 func (a *AntminerCGI) SetNormalMode() error {
 	return nil
