@@ -1,7 +1,7 @@
 package ant_miner_cgi
 
 // cgi-bin/get_system_info.cgi: Get system information.
-
+// TODO: default values for response objects
 type rawGetSystemInfoResponse struct {
 	DNSServers              string `json:"dnsservers"`
 	FirmwareType            string `json:"firmware_type"`
@@ -19,14 +19,14 @@ type rawGetSystemInfoResponse struct {
 	SystemMode              string `json:"system_mode"`
 }
 
-type SystemInfoResponse struct {
+type GetSystemInfoResponse struct {
 	FirmwareType string `json:"firmware_type"`
 	IPAddress    string `json:"ip_address"`
 	MacAddress   string `json:"mac_address"`
 	MinerType    string `json:"miner_type"` // used to determine which vendor the miner is from
 }
 
-func AntMinerCGIGetSystemInfo(ipAddress string) (*SystemInfoResponse, error) {
+func AntMinerCGIGetSystemInfo(ipAddress string) (*GetSystemInfoResponse, error) {
 
 	return nil, nil
 }
