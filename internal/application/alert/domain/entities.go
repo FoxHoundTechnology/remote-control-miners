@@ -1,10 +1,11 @@
-package alert
+package domain
 
 import (
 	"time"
 )
 
-// TODO: Validation
+// TODO: validation
+// TODO: create custom response objects for domain entities
 type Alert struct {
 	ID        string
 	Name      string

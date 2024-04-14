@@ -1,6 +1,7 @@
-package miner
+package domain
 
 // TODO: validation
+// TODO: create custom response objects for domain entities
 type Miner struct {
 	MacAddress string
 	IPAddress  string
@@ -12,11 +13,12 @@ type MinerController interface {
 	SetSleepMode() error
 	SetLowPowerMode() error
 
-	CheckStatus() error
+	CheckStatus() error // TODO: TBD
+	CheckStats() error
 	CheckConfig() error
 	CheckNetworkInfo() error
 	CheckSystemInfo() error
 
-	ChangePool() error
+	ChangePool([]Pool) error
 	Reboot() error
 }
