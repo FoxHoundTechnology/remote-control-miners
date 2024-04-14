@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
+
 	postgres "foxhound/internal/infrastructure/database/postgres"
 	"log"
 
@@ -9,9 +13,6 @@ import (
 	alert "foxhound/internal/infrastructure/database/repositories/alert"
 	miner "foxhound/internal/infrastructure/database/repositories/miner"
 	scanner "foxhound/internal/infrastructure/database/repositories/scanner"
-
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -22,38 +23,18 @@ func main() {
 	err := postgresDB.AutoMigrate(
 		&alert.Alert{},
 		&scanner.Scanner{},
+		&miner.Fleet{},
 		&miner.Miner{},
 		&miner.Pool{},
-		&miner.Temperature{},
 		&miner.TemperatureSensor{},
-		&miner.Fan{},
 		&miner.FanSensor{},
-		&miner.Fleet{},
 	)
 
 	if err != nil {
 		log.Fatalf("Failed to migrate the database: %v", err)
 	}
 
-	// antMinerCGI := service.AntminerCGI{
-	// 	Miner:       &domain.Miner{},
-	// 	Mode:        domain.Mode(domain.NormalMode),
-	// 	Status:      domain.Status(domain.Online),
-	// 	Config:      &domain.Config{},
-	// 	Stats:       &domain.Stats{},
-	// 	Pools:       &domain.Pool{},
-	// 	Temperature: &domain.Temperature{},
-	// 	Fan:         &domain.Fan{},
-	// }
-	// list := []domain.MinerController{
-	// 	&antMinerCGI,
-	// }
-	// for _, miner := range list {
-	// 	fmt.Println(miner)
-	// }
-
 	router := gin.Default()
-
 	router.Run(":8080")
 
 }
