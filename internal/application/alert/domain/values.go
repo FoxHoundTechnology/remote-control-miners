@@ -1,4 +1,4 @@
-package alert
+package domain
 
 type AlertThresholdType int
 
