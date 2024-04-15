@@ -1,5 +1,15 @@
 package queries
 
+import (
+	"encoding/json"
+	"fmt"
+
+	"foxhound/pkg/http_auth"
+
+	"io"
+	"net/http"
+)
+
 // cgi-bin/get_network_info.cgi
 // TODO: default values for response objects
 type rawGetNetworkInfoResponse struct {
@@ -21,6 +31,35 @@ type GetNetworkInfoResponse struct {
 	IPAddress  string `json:"ip_address"`
 }
 
-func AntMinerCGIGetNetworkInfo(ipAddress string) (*GetNetworkInfoResponse, error) {
-	return nil, nil
+func AntMinerCGIGetNetworkInfo(username, password, ipAddress string) (*GetNetworkInfoResponse, error) {
+
+	t := http_auth.NewTransport(username, password)
+
+	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_network_info.cgi", ipAddress), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := t.RoundTrip(newRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var rawGetNetworkInfoResponse rawGetNetworkInfoResponse
+	err = json.Unmarshal(body, &rawGetNetworkInfoResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetNetworkInfoResponse{
+		MacAddress: rawGetNetworkInfoResponse.MacAddress,
+		IPAddress:  rawGetNetworkInfoResponse.IPAddress,
+	}, nil
 }
