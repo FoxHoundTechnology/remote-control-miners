@@ -25,6 +25,7 @@ type Miner struct {
 	Pools       []Pool              `gorm:"foreignKey:MinerID;references:ID"`
 	Temperature []TemperatureSensor `gorm:"foreignKey:MinerID;references:ID; comment: A collection of highest temperatures"`
 	Fan         []FanSensor         `gorm:"foreignKey:MinerID;references:ID"`
+	Log         []Log               `gorm:"foreignKey:MinerID;references:ID"`
 
 	FleetID uint `gorm:"foreignKey:FleetID;references:ID"`
 }
@@ -46,4 +47,11 @@ type FanSensor struct {
 	gorm.Model
 	Sensor  domain.FanSensor `gorm:"embedded;"`
 	MinerID uint             `gorm:"foreignKey:MinerID;"`
+}
+
+type Log struct {
+	gorm.Model
+	Log       domain.Log       `gorm:"embedded;"`
+	EventType domain.EventType `gorm:"comment: EventType: 0=Operational, 1=SystemIssue, 2=UserActivity"`
+	MinerID   uint             `gorm:"foreignKey:MinerID;"`
 }

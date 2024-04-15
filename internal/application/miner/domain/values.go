@@ -39,9 +39,13 @@ type Stats struct {
 }
 
 type Pool struct {
-	Url  string
-	User string
-	Pass string
+	Url      string
+	User     string
+	Pass     string
+	Status   string // string for now
+	Accepted int
+	Rejected int
+	Stale    int
 }
 
 type Fleet struct {
@@ -60,7 +64,6 @@ type FanSensor struct {
 
 type Log struct {
 	Name      string
-	EventType EventType
 	Timestamp time.Time
 }
 

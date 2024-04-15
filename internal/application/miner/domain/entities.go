@@ -13,9 +13,10 @@ type MinerController interface {
 	SetSleepMode() error
 	SetLowPowerMode() error
 
-	CheckStatus() error // TODO: TBD
 	CheckStats() error
+	CheckPools() error
 	CheckConfig() error
+
 	CheckNetworkInfo() error
 	CheckSystemInfo() error
 
