@@ -24,12 +24,12 @@ type Alert struct {
 	Action    domain.AlertActionType    `gorm:"comment:'Reboot=0, Sleep=1, Normal=2, ChangePool=3'"`
 	Layer     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
 	State     domain.AlertState         `gorm:"comment:'Received=0, InProgress=1, Completed=2'"`
-	Log       []Log                     `gorm:"foreignKey:AlertID;references:ID"`
-	// CreatedAt, which is a field in gorm.Model.
+	Log       []AlertLog                `gorm:"foreignKey:AlertID;references:ID"`
+	// (CreatedAt): a field in gorm.Model.
 	Scanners []*Scanner `gorm:"many2many:scanner_alerts;"`
 }
 
-type Log struct {
+type AlertLog struct {
 	gorm.Model
 	Log     domain.Log `gorm:"embedded;"`
 	AlertID uint       `gorm:"foreignKey:AlertID;"`
