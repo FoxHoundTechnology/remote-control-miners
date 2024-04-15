@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
@@ -10,7 +8,6 @@ import (
 	"log"
 
 	// TODO: db migration/seed
-	alert "foxhound/internal/infrastructure/database/repositories/alert"
 	miner "foxhound/internal/infrastructure/database/repositories/miner"
 	scanner "foxhound/internal/infrastructure/database/repositories/scanner"
 )
@@ -21,7 +18,6 @@ func main() {
 	devMigrate(postgresDB)
 
 	err := postgresDB.AutoMigrate(
-		&alert.Alert{},
 		&scanner.Scanner{},
 		&miner.Fleet{},
 		&miner.Miner{},
@@ -35,6 +31,7 @@ func main() {
 	}
 
 	router := gin.Default()
+
 	router.Run(":8080")
 
 }
@@ -42,10 +39,10 @@ func main() {
 // TODO: migration/seed
 func devMigrate(db *gorm.DB) {
 
-	err := db.Exec("CREATE TYPE miner_type AS ENUM ('antimner_cgi')")
-	if err != nil {
-		fmt.Println("type already exists (expected)")
-	}
+	// err := db.Exec("CREATE TYPE miner_type AS ENUM ('antimner_cgi')")
+	// if err != nil {
+	// 	fmt.Println("type already exists (expected)")
+	// }
 
 	//..... add more types here until all the custom types are finalized
 }
