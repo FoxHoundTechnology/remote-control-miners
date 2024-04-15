@@ -70,7 +70,7 @@ func (a *AntminerCGI) SetSleepMode() error {
 		BitmainFanCtrl: a.FanCtrl,
 		BitmainFanPWM:  a.FanPwm,
 		FreqLevel:      a.FreqLevel,
-		MinerMode:      "1", // Normal Mode
+		MinerMode:      "1", // Sleep Mode
 		Pools:          a.Pools,
 	})
 	if err != nil {
@@ -91,7 +91,7 @@ func (a *AntminerCGI) SetLowPowerMode() error {
 		BitmainFanCtrl: a.FanCtrl,
 		BitmainFanPWM:  a.FanPwm,
 		FreqLevel:      a.FreqLevel,
-		MinerMode:      "3", // Sleep Mode
+		MinerMode:      "3", // Low Power Mode
 		Pools:          a.Pools,
 	})
 	if err != nil {
@@ -102,10 +102,6 @@ func (a *AntminerCGI) SetLowPowerMode() error {
 		return fmt.Errorf("failed to set miner config")
 	}
 
-	return nil
-}
-
-func (a *AntminerCGI) CheckStatus() error {
 	return nil
 }
 
@@ -134,6 +130,28 @@ func (a *AntminerCGI) CheckStats() error {
 		a.Fan = append(a.Fan, domain.FanSensor{
 			Name:  fmt.Sprintf("Fan %d", index),
 			Speed: speed,
+		})
+	}
+
+	return nil
+}
+
+func (a *AntminerCGI) CheckPools() error {
+
+	GetPoolsResponse, err := queries.AntMinerCGIGetPools(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	if err != nil {
+		return err
+	}
+
+	for _, pool := range *GetPoolsResponse {
+		a.Pools = append(a.Pools, domain.Pool{
+			Url:      pool.URL,
+			User:     pool.UserName,
+			Pass:     pool.Password,
+			Status:   pool.Status,
+			Accepted: pool.Accepted,
+			Rejected: pool.Rejected,
+			Stale:    pool.Stale,
 		})
 	}
 
@@ -183,5 +201,13 @@ func (a *AntminerCGI) ChangePool(pools []domain.Pool) error {
 }
 
 func (a *AntminerCGI) CheckNetworkInfo() error {
+	GetNetWorkInfoResponse, err := queries.AntMinerCGIGetNetworkInfo(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	if err != nil {
+		return err
+	}
+
+	a.Miner.IPAddress = GetNetWorkInfoResponse.IPAddress
+	a.Miner.MacAddress = GetNetWorkInfoResponse.MacAddress
+
 	return nil
 }
