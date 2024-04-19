@@ -1,9 +1,9 @@
 package domain
 
-type MinerType string
+type MinerType int
 
 const (
-	AntminerCgi MinerType = "antminer_cgi"
+	AntminerCgi MinerType = iota // 0
 	//...
 )
 

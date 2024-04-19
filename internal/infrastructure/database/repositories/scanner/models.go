@@ -6,14 +6,16 @@ import (
 	domain "foxhound/internal/application/scanner/domain"
 )
 
+// TODO: scanner name should be unique
+
 type Scanner struct {
 	gorm.Model
-	Scanner   domain.Scanner `gorm:"embedded;"`
-	Config    domain.Config  `gorm:"embedded;"`
-	MinerType string         `gorm:"type:miner_type"`
+	Scanner   domain.Scanner   `gorm:"embedded;"`
+	Config    domain.Config    `gorm:"embedded;"`
+	MinerType domain.MinerType `gorm:"comment:'AntMinerCgi=0'"`
 	Owner     string
-	FleetID   uint     `gorm:"foreignKey:FleetID;references:ID"`
-	Alerts    []*Alert `gorm:"many2many:scanner_alerts;"`
+	FleetID   uint `gorm:"foreignKey:FleetID;references:ID"`
+	Alerts    []Alert
 }
 
 type Alert struct {
@@ -26,7 +28,7 @@ type Alert struct {
 	Layer     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
 	State     domain.AlertState         `gorm:"comment:'Monitoring=0, Triggered=1, Resolving=2, Resolved=3'"`
 	Log       []AlertLog                `gorm:"foreignKey:AlertID;references:ID"`
-	Scanners  []*Scanner                `gorm:"many2many:scanner_alerts;"`
+	ScannerID uint
 }
 
 type AlertLog struct {

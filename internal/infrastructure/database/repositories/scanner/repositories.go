@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: add ListActiveScanners
+
 type ScannerRepositoryInterface interface {
 	Create(ctx context.Context, scanner *Scanner) error
 	FindByID(ctx context.Context, id uint) (*Scanner, error)

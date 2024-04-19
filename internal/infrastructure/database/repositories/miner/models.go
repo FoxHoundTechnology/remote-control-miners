@@ -4,6 +4,7 @@ import (
 	"gorm.io/gorm"
 
 	domain "foxhound/internal/application/miner/domain"
+	scanner_domain "foxhound/internal/application/scanner/domain"
 )
 
 // TODO: cascade/association
@@ -16,9 +17,10 @@ type Fleet struct {
 
 type Miner struct {
 	gorm.Model
-	Miner  domain.Miner  `gorm:"embedded"`
-	Stats  domain.Stats  `gorm:"embedded"`
-	Config domain.Config `gorm:"embedded"`
+	Miner     domain.Miner  `gorm:"embedded"`
+	Stats     domain.Stats  `gorm:"embedded"`
+	Config    domain.Config `gorm:"embedded"`
+	MinerType scanner_domain.MinerType
 
 	Mode   domain.Mode   `gorm:"comment: Mode: 0=Normal, 1=Sleep, 2=LowPower"`
 	Status domain.Status `gorm:"comment: Status: 0=Online, 1=Offline, 2=Disabled, 3=Error, 4=Warning"`
