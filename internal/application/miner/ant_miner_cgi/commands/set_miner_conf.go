@@ -33,7 +33,6 @@ type SetMinerConfigResponse struct {
 }
 
 func AntminerCGISetMinerConfig(username, password, ipAddress string, payload SetMinerConfigPayload) (*SetMinerConfigResponse, error) {
-
 	marshalledPayload, err := json.Marshal(payload) // original payload is retrieved from get_miner_conf endpoint
 	if err != nil {
 		return nil, err

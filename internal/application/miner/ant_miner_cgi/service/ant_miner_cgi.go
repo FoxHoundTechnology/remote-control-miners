@@ -9,7 +9,8 @@ import (
 	domain "foxhound/internal/application/miner/domain"
 )
 
-// TODO: custom errors for miner service
+// TODO: fix pool settings and pool stats
+// TODO: custom errors & logger for miner service
 // TODO: add contexts of miner API responses
 // TODO: add comments
 // TODO: timeout logic for set_miner_conf requests
@@ -64,6 +65,10 @@ func (a *AntminerCGI) SetNormalMode() error {
 		return fmt.Errorf("failed to set miner config")
 	}
 
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
+	a.Mode = domain.NormalMode
+
 	return nil
 }
 
@@ -84,6 +89,11 @@ func (a *AntminerCGI) SetSleepMode() error {
 	if SetMinerConfigResponse.Stats != "success" {
 		return fmt.Errorf("failed to set miner config")
 	}
+
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
+
+	a.Mode = domain.SleepMode
 
 	return nil
 }
@@ -106,6 +116,11 @@ func (a *AntminerCGI) SetLowPowerMode() error {
 		return fmt.Errorf("failed to set miner config")
 	}
 
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
+
+	a.Mode = domain.LowPowerMode
+
 	return nil
 }
 
@@ -115,10 +130,13 @@ func (a *AntminerCGI) CheckStats() error {
 		return err
 	}
 
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
+
 	a.Stats = domain.Stats{
-		HashRate:    GetStatsResponse.Rate5s,
-		RateIdeal:   GetStatsResponse.RateIdeal,
-		Uptime:      int(GetStatsResponse.Elapsed),
+		HashRate:  GetStatsResponse.Rate5s,
+		RateIdeal: GetStatsResponse.RateIdeal,
+		Uptime:    int(GetStatsResponse.Elapsed),
 	}
 	a.Mode = domain.Mode(GetStatsResponse.Mode)
 
@@ -146,11 +164,14 @@ func (a *AntminerCGI) CheckPools() error {
 		return err
 	}
 
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
+
 	for _, pool := range *GetPoolsResponse {
 		a.Pools = append(a.Pools, domain.Pool{
-			Url:      pool.URL,
-			User:     pool.UserName,
-			Pass:     pool.Password,
+			Url:  pool.URL,
+			User: pool.UserName,
+			// Pass:     pool.Password, // FIXME: separate pool settings and pool stats
 			Status:   pool.Status,
 			Accepted: pool.Accepted,
 			Rejected: pool.Rejected,
@@ -166,6 +187,9 @@ func (a *AntminerCGI) CheckSystemInfo() error {
 	if err != nil {
 		return err
 	}
+
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
 
 	a.Config.Firmware = GetSystemInfoResponse.FirmwareType
 	a.Miner.IPAddress = GetSystemInfoResponse.IPAddress
@@ -200,6 +224,11 @@ func (a *AntminerCGI) ChangePool(pools []domain.Pool) error {
 		return fmt.Errorf("failed to set miner config")
 	}
 
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
+
+	// TOOD: add the logic for updating the pool "stats"
+
 	return nil
 }
 
@@ -208,6 +237,10 @@ func (a *AntminerCGI) CheckNetworkInfo() error {
 	if err != nil {
 		return err
 	}
+
+
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
 
 	a.Miner.IPAddress = GetNetWorkInfoResponse.IPAddress
 	a.Miner.MacAddress = GetNetWorkInfoResponse.MacAddress
