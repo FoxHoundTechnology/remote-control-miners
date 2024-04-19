@@ -2,7 +2,7 @@ package service
 
 import (
 	"fmt"
-	"time"
+	"sync"
 
 	commands "foxhound/internal/application/miner/ant_miner_cgi/commands"
 	queries "foxhound/internal/application/miner/ant_miner_cgi/queries"
@@ -26,6 +26,7 @@ type AntminerCGI struct {
 	FanCtrl     bool   // fan control enabled/disabled
 	FanPwm      string // fan pwm value
 	FreqLevel   string // frequency level
+	rwMutex     *sync.RWMutex
 }
 
 func (a *AntminerCGI) CheckConfig() error {
@@ -33,6 +34,9 @@ func (a *AntminerCGI) CheckConfig() error {
 	if err != nil {
 		return err
 	}
+
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
 
 	a.FanCtrl = GetMinerConfigResponse.BitmainFanCtrl
 	a.FanPwm = GetMinerConfigResponse.BitmainFanPWM
@@ -115,7 +119,6 @@ func (a *AntminerCGI) CheckStats() error {
 		HashRate:    GetStatsResponse.Rate5s,
 		RateIdeal:   GetStatsResponse.RateIdeal,
 		Uptime:      int(GetStatsResponse.Elapsed),
-		LastUpdated: time.Now(),
 	}
 	a.Mode = domain.Mode(GetStatsResponse.Mode)
 

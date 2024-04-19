@@ -21,6 +21,12 @@ type MinerRepository struct {
 	db *gorm.DB
 }
 
+func NewMinerRepository(db *gorm.DB) *MinerRepository {
+	return &MinerRepository{
+		db: db,
+	}
+}
+
 func (r *MinerRepository) Create(ctx context.Context, miner *Miner) error {
 	return r.db.WithContext(ctx).Create(miner).Error
 }

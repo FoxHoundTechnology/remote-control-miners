@@ -18,6 +18,12 @@ type ScannerRepository struct {
 	db *gorm.DB
 }
 
+func NewScannerRepository(db *gorm.DB) *ScannerRepository {
+	return &ScannerRepository{
+		db: db,
+	}
+}
+
 func (r *ScannerRepository) Create(ctx context.Context, scanner *Scanner) error {
 	return r.db.WithContext(ctx).Create(scanner).Error
 }
@@ -37,7 +43,10 @@ func (r *ScannerRepository) Delete(ctx context.Context, id uint) error {
 }
 
 func (r *ScannerRepository) List(ctx context.Context) ([]*Scanner, error) {
+
 	var scanners []*Scanner
-	result := r.db.WithContext(ctx).Find(&scanners)
+
+	result := r.db.WithContext(ctx).Preload("Alert").Find(&scanners)
+
 	return scanners, result.Error
 }
