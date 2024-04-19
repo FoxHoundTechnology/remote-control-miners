@@ -19,11 +19,12 @@ type Scanner struct {
 type Alert struct {
 	gorm.Model
 	Name      string
+	Value     domain.AlertValue
 	Threshold domain.AlertThresholdType `gorm:"comment:'ThresholdCount=0, ThresholdRate=1'"`
 	Condition domain.AlertConditionType `gorm:"comment:'Hashrate=0, Temperature=1, FanSpeed=2, PoolShares=3, OfflineMiners=4, MissingHashboards=5'"`
 	Action    domain.AlertActionType    `gorm:"comment:'Reboot=0, Sleep=1, Normal=2, ChangePool=3'"`
 	Layer     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
-	State     domain.AlertState         `gorm:"comment:'Received=0, InProgress=1, Completed=2'"`
+	State     domain.AlertState         `gorm:"comment:'Monitoring=0, Triggered=1, Resolving=2, Resolved=3'"`
 	Log       []AlertLog                `gorm:"foreignKey:AlertID;references:ID"`
 	Scanners  []*Scanner                `gorm:"many2many:scanner_alerts;"`
 }
