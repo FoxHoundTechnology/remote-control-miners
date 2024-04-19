@@ -77,24 +77,10 @@ func DevMigrateFleet(db *gorm.DB) error {
 		}
 	}
 
-	// # using name, associate the child tables
-
-	// fleet2 := miner.Fleet{
-	// 	Name: "test_fleet",
-	// }
-
-	// if err := db.Preload("Miners").Find(&fleet2, 2); err != nil {
-	// 	fmt.Println("err in find with preload", err)
-	// 	fmt.Println("what is inside of fleet2", fleet2)
-	// 	return nil
-	// }
-
 	return nil
 }
 
 func devMigrateAlert(db *gorm.DB) error {
-
-	// so I have to separate them when operaion includes scanner
 
 	scanner := scanner_repo.Scanner{
 		Scanner: scanner_domain.Scanner{
