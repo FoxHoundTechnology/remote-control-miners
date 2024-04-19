@@ -8,11 +8,11 @@ import (
 
 type Scanner struct {
 	gorm.Model
-	Scanner domain.Scanner `gorm:"embedded;"`
-	Config  domain.Config  `gorm:"embedded;"`
-
-	MinerType string `gorm:"type:miner_type"`
+	Scanner   domain.Scanner `gorm:"embedded;"`
+	Config    domain.Config  `gorm:"embedded;"`
+	MinerType string         `gorm:"type:miner_type"`
 	Owner     string
+	FleetID   uint     `gorm:"foreignKey:FleetID;references:ID"`
 	Alerts    []*Alert `gorm:"many2many:scanner_alerts;"`
 }
 
@@ -25,8 +25,7 @@ type Alert struct {
 	Layer     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
 	State     domain.AlertState         `gorm:"comment:'Received=0, InProgress=1, Completed=2'"`
 	Log       []AlertLog                `gorm:"foreignKey:AlertID;references:ID"`
-	// (CreatedAt): a field in gorm.Model.
-	Scanners []*Scanner `gorm:"many2many:scanner_alerts;"`
+	Scanners  []*Scanner                `gorm:"many2many:scanner_alerts;"`
 }
 
 type AlertLog struct {

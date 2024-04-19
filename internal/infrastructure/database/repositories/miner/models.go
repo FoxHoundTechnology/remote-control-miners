@@ -10,6 +10,7 @@ import (
 // TODO: pool config
 type Fleet struct {
 	gorm.Model
+	Name   string
 	Miners []Miner `gorm:"foreignKey:FleetID;references:ID"` // one-to-many
 }
 
@@ -27,7 +28,7 @@ type Miner struct {
 	Fan         []FanSensor         `gorm:"foreignKey:MinerID;references:ID"`
 	Log         []MinerLog          `gorm:"foreignKey:MinerID;references:ID"`
 
-	FleetID uint `gorm:"foreignKey:FleetID;references:ID"`
+	FleetID uint `gorm:"uniqueIndex;foreignKey:FleetID;references:ID"`
 }
 
 type Pool struct {

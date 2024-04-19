@@ -4,7 +4,6 @@ import (
 	"time"
 )
 
-// OPTION: segregate the domain values with value/scan methods into their respective files as it grows
 type Mode int
 
 const (
@@ -30,10 +29,9 @@ type Config struct {
 }
 
 type Stats struct {
-	HashRate    float64   // in GH/s
-	RateIdeal   float64   // in GH/s
-	Uptime      int       // in seconds
-	LastUpdated time.Time // UTC timestamp
+	HashRate  float64 // in GH/s
+	RateIdeal float64 // in GH/s
+	Uptime    int     // in seconds
 }
 
 type Pool struct {
@@ -45,11 +43,6 @@ type Pool struct {
 	Rejected int
 	Stale    int
 }
-
-type Fleet struct {
-	Miners []Miner
-}
-
 type TemperatureSensor struct {
 	Name    string
 	TempPcb []int
