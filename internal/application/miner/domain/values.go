@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// TODO: fix pool settings and pool stats
 type Mode int
 
 const (

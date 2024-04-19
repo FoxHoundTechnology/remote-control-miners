@@ -13,6 +13,8 @@ type Config struct {
 	Password string
 }
 
+type AlertValue int
+
 type AlertThresholdType int
 
 const (
@@ -52,12 +54,10 @@ const (
 type AlertState int
 
 const (
-	Received   AlertState = iota // 0
-	InProgress                   // 1
-	Completed                    // 2
+	Monitoring AlertState = iota // 0
+	Triggered                    // 1
+	Resolving                    // 2
+	Resolved                     // 3
 )
 
-type Log struct {
-	Name      string
-	Timestamp string
-}
+type Log string
