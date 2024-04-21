@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	fleet_repo "foxhound/internal/infrastructure/database/repositories/fleet"
 	miner_repo "foxhound/internal/infrastructure/database/repositories/miner"
 	scanner_repo "foxhound/internal/infrastructure/database/repositories/scanner"
 
@@ -12,12 +13,11 @@ import (
 )
 
 func DevMigrateFleet(db *gorm.DB) error {
-	// w
-	fleet := miner_repo.Fleet{
+	fleet := fleet_repo.Fleet{
 		Name: "test_fleet",
 	}
 
-	db.Where(miner_repo.Fleet{
+	db.Where(fleet_repo.Fleet{
 		Name: "test_fleet",
 	}).FirstOrCreate(&fleet)
 
@@ -80,7 +80,7 @@ func DevMigrateFleet(db *gorm.DB) error {
 	return nil
 }
 
-func devMigrateAlert(db *gorm.DB) error {
+func DevMigrateScanerAndAlert(db *gorm.DB) error {
 
 	scanner := scanner_repo.Scanner{
 		Scanner: scanner_domain.Scanner{
@@ -97,6 +97,7 @@ func devMigrateAlert(db *gorm.DB) error {
 		},
 		MinerType: scanner_domain.AntminerCgi,
 		Owner:     "test owner",
+		// FleetID
 	}
 
 	result := db.Where("name = ?", scanner.Scanner.Name).First(&scanner)
