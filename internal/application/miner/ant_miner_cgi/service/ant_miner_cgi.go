@@ -158,7 +158,6 @@ func (a *AntminerCGI) CheckStats() error {
 }
 
 func (a *AntminerCGI) CheckPools() error {
-
 	GetPoolsResponse, err := queries.AntMinerCGIGetPools(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
 		return err
@@ -169,9 +168,6 @@ func (a *AntminerCGI) CheckPools() error {
 
 	for _, pool := range *GetPoolsResponse {
 		a.Pools = append(a.Pools, domain.Pool{
-			Url:  pool.URL,
-			User: pool.UserName,
-			// Pass:     pool.Password, // FIXME: separate pool settings and pool stats
 			Status:   pool.Status,
 			Accepted: pool.Accepted,
 			Rejected: pool.Rejected,
@@ -237,7 +233,6 @@ func (a *AntminerCGI) CheckNetworkInfo() error {
 	if err != nil {
 		return err
 	}
-
 
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
