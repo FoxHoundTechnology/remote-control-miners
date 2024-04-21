@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func DevMigrateFleet(db *gorm.DB) error {
+func DevMigrate(db *gorm.DB) error {
 	fleet := fleet_repo.Fleet{
 		Name: "test_fleet",
 	}
@@ -77,11 +77,6 @@ func DevMigrateFleet(db *gorm.DB) error {
 		}
 	}
 
-	return nil
-}
-
-func DevMigrateScanerAndAlert(db *gorm.DB) error {
-
 	scanner := scanner_repo.Scanner{
 		Scanner: scanner_domain.Scanner{
 			Name:     "scanner test",
@@ -97,7 +92,7 @@ func DevMigrateScanerAndAlert(db *gorm.DB) error {
 		},
 		MinerType: scanner_domain.AntminerCgi,
 		Owner:     "test owner",
-		// FleetID
+		FleetID:   fleet.ID,
 	}
 
 	result := db.Where("name = ?", scanner.Scanner.Name).First(&scanner)

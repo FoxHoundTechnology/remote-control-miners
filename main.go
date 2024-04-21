@@ -25,7 +25,6 @@ func main() {
 
 	err := postgresDB.AutoMigrate(
 		// NOTE: The order matters
-
 		&fleet_repo.Fleet{},
 
 		&scanner_repo.Scanner{},
@@ -42,8 +41,7 @@ func main() {
 		log.Fatalf("Failed to migrate the database: %v", err)
 	}
 
-	DevMigrateFleet(postgresDB)
-	DevMigrateScanerAndAlert(postgresDB)
+	DevMigrate(postgresDB)
 
 	router := gin.Default()
 
@@ -56,31 +54,47 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel() // Ensure that resources are freed on return
 
-	scannerRepo := scanner_repo.NewScannerRepository(postgresDB)
+	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
+	// minerRepo := miner_repo.NewMinerRepository(postgresDB)
+	// scannerRepo := scanner_repo.NewScannerRepository(postgresDB)
 
 	pool := pond.New(100, 1000)
 	// go func() { }()
 	// ticker
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
+
 		case <-ctx.Done():
 			fmt.Println("Shutting down the scheduled tasks...")
 			return
 
 		case <-ticker.C:
 			fmt.Println("Running scheduled tasks...")
-
-			// retrieve fleet list from db
+			fleets, err := fleetRepo.List()
+			if err != nil {
+				// alert layer =  4
+				fmt.Println("Error getting fleet list:", err)
+				continue
+			}
+			fmt.Println("fleet list", fleets)
 
 			// spawn a goroutine for each fleet->scanner (which is associated with a scanner and a list of miners)
+			for _, fleet := range fleets {
+				pool.Submit(func() {
+					fmt.Printf("Processing scanner ID: %d\n", fleet.ID)
+					fmt.Println("fleet", fleet)
+
+				})
+			}
 
 			// (in each goroutine)
 			// ARP scan within the ip range
 			// using controller to get the miner list
 			// while retrieving the raw response and injest it to the miner payload struct
 			// methods that will be used is the followings:
+
 			// 1, CheckSystemInfo
 
 			// 2, CheckStats
@@ -101,22 +115,6 @@ func main() {
 
 			// kill go routines after the fleet->scanner->miner list is processed
 
-			scanners, err := scannerRepo.List()
-			if err != nil {
-				fmt.Println("Error getting scanner list:", err)
-				continue
-			}
-
-			fmt.Println("scanner list from db", scanners)
-			fmt.Println("Scanner list retrieved, number of scanners:", len(scanners))
-
-			for _, scanner := range scanners {
-				sc := scanner // capture range variable
-				pool.Submit(func() {
-					fmt.Printf("Processing scanner ID: %d\n", sc.ID)
-				})
-
-			}
 		}
 	}
 

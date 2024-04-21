@@ -13,8 +13,9 @@ type Scanner struct {
 	Config    domain.Config    `gorm:"embedded;"`
 	MinerType domain.MinerType `gorm:"comment:'AntMinerCgi=0'"`
 	Owner     string
-	FleetID   uint `gorm:"foreignKey:FleetID;references:ID"`
-	Alerts    []Alert
+
+	FleetID uint
+	Alerts  []Alert
 }
 
 type Alert struct {
@@ -33,5 +34,5 @@ type Alert struct {
 type AlertLog struct {
 	gorm.Model
 	Log     domain.Log `gorm:"embedded;"`
-	AlertID uint       `gorm:"foreignKey:AlertID;"`
+	AlertID uint
 }
