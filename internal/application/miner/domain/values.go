@@ -55,8 +55,8 @@ type FanSensor struct {
 }
 
 type Log struct {
-	Name      string
-	Timestamp time.Time
+	Description string
+	Timestamp   time.Time
 }
 
 type EventType int
