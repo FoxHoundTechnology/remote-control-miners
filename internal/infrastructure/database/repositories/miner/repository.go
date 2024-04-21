@@ -12,7 +12,6 @@ import (
 // TODO: clause operation
 // TODO: delete with cascade
 
-// receiver functions go here
 type MinerRepository struct {
 	db *gorm.DB
 }
@@ -45,7 +44,6 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 }
 
 // [ ]
-// NOT TESTED
 // JOIN with miner config
 /*
 	Struct db.Find(&users, User{Age: 20})
@@ -54,7 +52,7 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 func (r *MinerRepository) ListByFleetID(ctx context.Context, miner *Miner) ([]*Miner, error) {
 	var miners []*Miner
 	// TODO: test preload
-	// TODO: test different way of defining the query with struct
+	// TODO: test a different way of defining the query with struct
 	err := r.db.Find(&miners, "fleet_id = ?", miners).Error
 	if err != nil {
 		return nil, err
