@@ -33,7 +33,7 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 	}
 
 	// Save is a combined function.
-	// If save value does not contain primary key,
+	// If save value does not contain its primary key,
 	// it executes Create. Otherwise it executes Update (with all fields).
 	err = r.db.Save(&miner).Error
 	if err != nil {
