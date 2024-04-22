@@ -34,6 +34,7 @@ func main() {
 		&miner_repo.Miner{},
 		&miner_repo.Pool{},
 		&miner_repo.TemperatureSensor{},
+		&miner_repo.PcbSensor{},
 		&miner_repo.FanSensor{},
 		&miner_repo.MinerLog{},
 	)
@@ -61,7 +62,7 @@ func main() {
 	pool := pond.New(100, 1000)
 	// go func() { }()
 	// ticker
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -85,7 +86,6 @@ func main() {
 				pool.Submit(func() {
 					fmt.Printf("Processing scanner ID: %d\n", fleet.ID)
 					fmt.Println("fleet", fleet)
-
 				})
 			}
 

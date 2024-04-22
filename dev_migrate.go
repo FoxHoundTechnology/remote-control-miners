@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	fleet_repo "foxhound/internal/infrastructure/database/repositories/fleet"
 	miner_repo "foxhound/internal/infrastructure/database/repositories/miner"
@@ -17,9 +18,14 @@ func DevMigrate(db *gorm.DB) error {
 		Name: "test_fleet",
 	}
 
-	db.Where(fleet_repo.Fleet{
-		Name: "test_fleet",
-	}).FirstOrCreate(&fleet)
+	err := db.First(&fleet, "name = ?", fleet.Name).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		err := db.Create(&fleet).Error
+		if err != nil {
+			fmt.Println("ERROR IN FLEET", err)
+			return err
+		}
+	}
 
 	fmt.Println("fleet ID", fleet.ID)
 
@@ -40,28 +46,126 @@ func DevMigrate(db *gorm.DB) error {
 				Password: "pass",
 				Firmware: "v1.2.3",
 			},
-			Mode:    miner_domain.NormalMode,
-			Status:  miner_domain.Online,
-			FleetID: fleet.ID,
-		},
-		{
-			Miner: miner_domain.Miner{
-				MacAddress: "00:1A:2B:3C:4D:5T",
-				IPAddress:  "192.168.1.101",
-				Owner:      "Owner2",
+			Mode:   miner_domain.NormalMode,
+			Status: miner_domain.Online,
+			// NOTE: associated models for miner
+			Pools: []miner_repo.Pool{
+				{
+					Pool: miner_domain.Pool{
+						Url:      "http://pool1.com",
+						User:     "pool_user",
+						Pass:     "pool_pass",
+						Status:   "Active",
+						Accepted: 10,
+						Rejected: 50,
+						Stale:    100,
+					},
+				},
+				{
+					Pool: miner_domain.Pool{
+						Url:      "http://pool2.com",
+						User:     "pool_user",
+						Pass:     "pool_pass",
+						Status:   "Active",
+						Accepted: 430,
+						Rejected: 50,
+						Stale:    10,
+					},
+				},
+				{
+					Pool: miner_domain.Pool{
+						Url:      "http://pool3.com",
+						User:     "pool_user",
+						Pass:     "pool_pass",
+						Status:   "Active",
+						Accepted: 630,
+						Rejected: 90,
+						Stale:    100,
+					},
+				},
 			},
-			Stats: miner_domain.Stats{
-				HashRate:  5000.0,
-				RateIdeal: 5200.0,
-				Uptime:    100000,
+			Temperature: []miner_repo.TemperatureSensor{
+				{
+					Name: "chain 1",
+					PcbSensors: []miner_repo.PcbSensor{
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 50,
+							},
+						},
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 40,
+							},
+						},
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 40,
+							},
+						},
+					},
+				},
+				{
+					Name: "chain 2",
+					PcbSensors: []miner_repo.PcbSensor{
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 50,
+							},
+						},
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 40,
+							},
+						},
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 49,
+							},
+						},
+					},
+				},
+				{
+					Name: "chain 3",
+					PcbSensors: []miner_repo.PcbSensor{
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 50,
+							},
+						},
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 40,
+							},
+						},
+						{
+							PcbSensor: miner_domain.PcbSensor{
+								Temperature: 44,
+							},
+						},
+					},
+				},
 			},
-			Config: miner_domain.Config{
-				Username: "user",
-				Password: "pass",
-				Firmware: "v1.2.3",
+			Fan: []miner_repo.FanSensor{
+				{
+					Sensor: miner_domain.FanSensor{
+						Name:  "fan 1",
+						Speed: 100,
+					},
+				},
+				{
+					Sensor: miner_domain.FanSensor{
+						Name:  "fan 2",
+						Speed: 120,
+					},
+				},
+				{
+					Sensor: miner_domain.FanSensor{
+						Name:  "fan 3",
+						Speed: 180,
+					},
+				},
 			},
-			Mode:    miner_domain.NormalMode,
-			Status:  miner_domain.Online,
 			FleetID: fleet.ID,
 		},
 	}
@@ -73,13 +177,12 @@ func DevMigrate(db *gorm.DB) error {
 		if result.RowsAffected == 0 {
 			err := db.Create(&miner).Error
 			fmt.Println("ERROR IN ROWS", err)
-
 		}
 	}
 
 	scanner := scanner_repo.Scanner{
+		Name: "scanner test",
 		Scanner: scanner_domain.Scanner{
-			Name:     "scanner test",
 			StartIP:  "10.0.0.137",
 			EndIP:    "10.0.0.180",
 			Active:   true,
@@ -95,7 +198,7 @@ func DevMigrate(db *gorm.DB) error {
 		FleetID:   fleet.ID,
 	}
 
-	result := db.Where("name = ?", scanner.Scanner.Name).First(&scanner)
+	result := db.Where("name = ?", scanner.Name).First(&scanner)
 	if result.RowsAffected == 0 {
 		err := db.Create(&scanner).Error
 		fmt.Println("ERROR IN ROWS", err)
@@ -117,7 +220,7 @@ func DevMigrate(db *gorm.DB) error {
 	}
 	alertB := scanner_repo.Alert{
 		Name:      "alert B",
-		Value:     10, // 50 machines
+		Value:     10, // 10 machines
 		Threshold: scanner_domain.ThresholdCount,
 		Condition: scanner_domain.Temperature,
 		Action:    scanner_domain.Sleep,

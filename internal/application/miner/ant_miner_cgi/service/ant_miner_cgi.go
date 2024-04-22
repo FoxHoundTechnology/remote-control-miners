@@ -140,10 +140,17 @@ func (a *AntminerCGI) CheckStats() error {
 	}
 	a.Mode = domain.Mode(GetStatsResponse.Mode)
 
-	for index, tempereture := range GetStatsResponse.Chain {
+	for index, temperature := range GetStatsResponse.Chain {
+		pcbSensors := []domain.PcbSensor{}
+		for _, tempereture := range temperature.TempPcb {
+			pcbSensors = append(pcbSensors, domain.PcbSensor{
+				Temperature: tempereture,
+			})
+		}
+
 		a.Temperature = append(a.Temperature, domain.TemperatureSensor{
-			Name:    fmt.Sprintf("Chain %d", index),
-			TempPcb: tempereture.TempPcb,
+			Name:       fmt.Sprintf("Chain %d", index),
+			PcbSensors: pcbSensors,
 		})
 	}
 
