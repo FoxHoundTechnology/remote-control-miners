@@ -9,6 +9,7 @@ import (
 // TODO: scanner name should be unique
 type Scanner struct {
 	gorm.Model
+	Name      string
 	Scanner   domain.Scanner   `gorm:"embedded;"`
 	Config    domain.Config    `gorm:"embedded;"`
 	MinerType domain.MinerType `gorm:"comment:'AntMinerCgi=0'"`

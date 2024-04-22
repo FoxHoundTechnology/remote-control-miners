@@ -44,8 +44,7 @@ func (r *FleetRepository) Upsert(ctx context.Context, fleet *Fleet) (uint, error
 func (r *FleetRepository) List() ([]*Fleet, error) {
 	var fleets []*Fleet
 	// db.Joins("Company").Joins("Manager").Joins("Account").Find(&users, "users.id IN ?", []int{1,2,3,4,5})
-
-	err := r.db.Where("fleet").Joins("Scanners").Find(&fleets).Error
+	err := r.db.Find(&fleets).Error
 	if err != nil {
 		return nil, err
 	}

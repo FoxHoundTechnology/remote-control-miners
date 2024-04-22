@@ -33,9 +33,15 @@ type Pool struct {
 
 type TemperatureSensor struct {
 	gorm.Model
-	Name        string
-	Temperature int
-	MinerID     uint
+	Name       string
+	PcbSensors []PcbSensor
+	MinerID    uint
+}
+
+type PcbSensor struct {
+	gorm.Model
+	PcbSensor           miner_domain.PcbSensor `gorm:"embedded;"`
+	TemperatureSensorID uint
 }
 
 type FanSensor struct {
