@@ -12,7 +12,8 @@ import (
 
 // cgi-bin/get_system_info.cgi: Get system information.
 // TODO: default values for response objects
-type rawGetSystemInfoResponse struct {
+// TODO: modify the raw response object
+type RawGetSystemInfoResponse struct {
 	DNSServers              string `json:"dnsservers"`
 	FirmwareType            string `json:"firmware_type"`
 	Gateway                 string `json:"gateway"`
@@ -70,7 +71,7 @@ func AntMinerCGIGetSystemInfo(username, password, ipAddress string) (*GetSystemI
 		return nil, err
 	}
 
-	var rawGetSystemInfoResponse rawGetSystemInfoResponse
+	var rawGetSystemInfoResponse RawGetSystemInfoResponse
 	err = json.Unmarshal(body, &rawGetSystemInfoResponse)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
