@@ -10,6 +10,6 @@ import (
 type Fleet struct {
 	gorm.Model
 	Name    string
-	Miners  []miner_repo.Miner  
-	Scanner scanner_repo.Scanner 
+	Miners  []miner_repo.Miner
+	Scanner scanner_repo.Scanner
 }

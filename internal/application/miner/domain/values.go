@@ -1,9 +1,6 @@
 package domain
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"time"
 )
 
@@ -73,19 +70,3 @@ const (
 	SystemIssue         // 1
 	UserActivity        // 2
 )
-
-// Value/Scan methods for TemperatureSensor
-func (t TemperatureSensor) Value() (driver.Value, error) {
-	return json.Marshal(t)
-}
-
-func (t *TemperatureSensor) Scan(value interface{}) error {
-	switch v := value.(type) {
-	case []byte:
-		return json.Unmarshal(v, t)
-	case string:
-		return json.Unmarshal([]byte(v), t)
-	default:
-		return errors.New("invalid type")
-	}
-}

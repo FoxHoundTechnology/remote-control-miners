@@ -41,12 +41,13 @@ func (r *FleetRepository) Upsert(ctx context.Context, fleet *Fleet) (uint, error
 	return fleet.ID, nil
 }
 
-func (r *FleetRepository) List() ([]*Fleet, error) {
-	var fleets []*Fleet
-	// db.Joins("Company").Joins("Manager").Joins("Account").Find(&users, "users.id IN ?", []int{1,2,3,4,5})
-	err := r.db.Find(&fleets).Error
+// Fleet -> Scanner -> Alerts
+func (r *FleetRepository) List() ([]Fleet, error) {
+	var fleets []Fleet
+	err := r.db.Model(&Fleet{}).Preload("Scanner.Alerts").Find(&fleets).Error
 	if err != nil {
 		return nil, err
 	}
+
 	return fleets, err
 }

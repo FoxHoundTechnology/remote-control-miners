@@ -19,6 +19,10 @@ type Scanner struct {
 	Alerts  []Alert
 }
 
+// TODO: simplify the data structure of the alert
+// alert -<one to many>-> condition(s) with a single action
+// to avoid data race conditions
+
 type Alert struct {
 	gorm.Model
 	Name      string
@@ -29,11 +33,13 @@ type Alert struct {
 	Layer     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
 	State     domain.AlertState         `gorm:"comment:'Monitoring=0, Triggered=1, Resolving=2, Resolved=3'"`
 	Log       []AlertLog                `gorm:"foreignKey:AlertID;references:ID"`
+
 	ScannerID uint
 }
 
 type AlertLog struct {
 	gorm.Model
-	Log     domain.Log `gorm:"embedded;"`
+	Log domain.Log `gorm:"embedded;"`
+
 	AlertID uint
 }
