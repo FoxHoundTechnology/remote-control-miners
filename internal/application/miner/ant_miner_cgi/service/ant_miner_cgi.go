@@ -33,11 +33,15 @@ type AntminerCGI struct {
 
 func NewAntminerCGI(config domain.Config, miner domain.Miner) *AntminerCGI {
 	return &AntminerCGI{
-		Miner:       miner,
-		Mode:        domain.SleepMode,
-		Status:      domain.Offline,
-		Config:      config,
-		Stats:       domain.Stats{},
+		Miner:  miner,
+		Mode:   domain.SleepMode,
+		Status: domain.Offline,
+		Config: config,
+		Stats: domain.Stats{
+			HashRate:  0,
+			RateIdeal: 0,
+			Uptime:    0,
+		},
 		Pools:       make([]domain.Pool, 0),
 		Temperature: make([]domain.TemperatureSensor, 0),
 		Fan:         make([]domain.FanSensor, 0),
