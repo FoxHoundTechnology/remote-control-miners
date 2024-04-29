@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	commands "foxhound/internal/application/miner/ant_miner_cgi/commands"
@@ -30,6 +31,23 @@ type AntminerCGI struct {
 	rwMutex     *sync.RWMutex
 }
 
+func NewAntminerCGI(config domain.Config, miner domain.Miner) *AntminerCGI {
+	return &AntminerCGI{
+		Miner:       miner,
+		Mode:        domain.SleepMode,
+		Status:      domain.Offline,
+		Config:      config,
+		Stats:       domain.Stats{},
+		Pools:       make([]domain.Pool, 0),
+		Temperature: make([]domain.TemperatureSensor, 0),
+		Fan:         make([]domain.FanSensor, 0),
+		FanCtrl:     true,
+		FanPwm:      "100",
+		FreqLevel:   "",
+		rwMutex:     new(sync.RWMutex),
+	}
+}
+
 func (a *AntminerCGI) CheckConfig() error {
 	GetMinerConfigResponse, err := queries.AntMinerCGIGetMinerConfig(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
@@ -44,6 +62,8 @@ func (a *AntminerCGI) CheckConfig() error {
 	a.FreqLevel = GetMinerConfigResponse.FreqLevel
 	a.Pools = GetMinerConfigResponse.Pools
 	a.Mode = domain.Mode(GetMinerConfigResponse.MinerMode)
+
+	log.Println("CHECK CONFIG --->>", a.FanCtrl, a.FanPwm, a.FreqLevel, a.Pools, a.Mode)
 
 	return nil
 }
@@ -67,6 +87,7 @@ func (a *AntminerCGI) SetNormalMode() error {
 
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
+
 	a.Mode = domain.NormalMode
 
 	return nil
