@@ -5,7 +5,6 @@ package domain
 type Miner struct {
 	MacAddress string
 	IPAddress  string
-	Owner      string
 }
 
 type MinerController interface {

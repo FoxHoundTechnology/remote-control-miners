@@ -44,7 +44,11 @@ func (r *FleetRepository) Upsert(ctx context.Context, fleet *Fleet) (uint, error
 // Fleet -> Scanner -> Alerts
 func (r *FleetRepository) List() ([]Fleet, error) {
 	var fleets []Fleet
-	err := r.db.Model(&Fleet{}).Preload("Scanner.Alerts").Find(&fleets).Error
+	err := r.db.Model(&Fleet{}).
+		Preload("Scanner").       // Preload the Scanner associated with each Fleet
+		Preload("Scanner.Alert"). // Preload the Alert associated with each Scanner
+		Preload("Scanner.Alert.Condition").
+		Find(&fleets).Error
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,7 @@ import (
 
 type Fleet struct {
 	gorm.Model
-	Name    string
+	Name    string `gorm:"unique"`
 	Miners  []miner_repo.Miner
 	Scanner scanner_repo.Scanner
 }

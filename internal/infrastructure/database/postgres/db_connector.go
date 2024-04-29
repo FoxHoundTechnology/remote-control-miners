@@ -28,7 +28,7 @@ var settings = PostgresConnectionSettings{
 	Database: "postgres",    // Placeholder values
 }
 
-// TODO: automate instantiation with init
+// TODO: automate the db instantiation with init
 func Init() *gorm.DB {
 
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
