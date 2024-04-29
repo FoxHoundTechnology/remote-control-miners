@@ -8,6 +8,7 @@ import (
 )
 
 // TODO: preload with alerts and alert logs
+// NOTE: alert condition order matters
 type ScannerRepository struct {
 	db *gorm.DB
 }

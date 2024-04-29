@@ -6,10 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// TODO: scanner name should be unique
+// TODO: add the logic to prevent the same conditions type
+//
+//	(e.g. Hashrate and Hashrate) from being added to the same alert
+
 type Scanner struct {
 	gorm.Model
-	Name      string
+	Name      string           `gorm:"unique"`
 	Scanner   domain.Scanner   `gorm:"embedded;"`
 	Config    domain.Config    `gorm:"embedded;"`
 	MinerType domain.MinerType `gorm:"comment:'AntMinerCgi=0'"`
