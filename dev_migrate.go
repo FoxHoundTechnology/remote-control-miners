@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	"os"
+
 	fleet_repo "foxhound/internal/infrastructure/database/repositories/fleet"
 	miner_repo "foxhound/internal/infrastructure/database/repositories/miner"
 	scanner_repo "foxhound/internal/infrastructure/database/repositories/scanner"
@@ -34,7 +36,6 @@ func DevMigrate(db *gorm.DB) error {
 			Miner: miner_domain.Miner{
 				MacAddress: "00:1A:2B:3C:4D:5E",
 				IPAddress:  "10.0.1.100",
-				Owner:      "Owner1",
 			},
 			Stats: miner_domain.Stats{
 				HashRate:  5000.0,
@@ -180,18 +181,24 @@ func DevMigrate(db *gorm.DB) error {
 		}
 	}
 
+	start_ip := os.Getenv("START_IP")
+	end_ip := os.Getenv("END_IP")
+
+	temp_user := os.Getenv("TEMP_USER")
+	temp_pass := os.Getenv("TEMP_PASS")
+
 	scanner := scanner_repo.Scanner{
 		Name: "scanner test",
 		Scanner: scanner_domain.Scanner{
-			StartIP:  "10.0.0.137",
-			EndIP:    "10.0.0.180",
+			StartIP:  start_ip,
+			EndIP:    end_ip,
 			Active:   true,
 			Location: "TEST LOCATION",
 		},
 		Config: scanner_domain.Config{
 			Interval: 5,
-			Username: "user",
-			Password: "pass",
+			Username: temp_user,
+			Password: temp_pass,
 		},
 		MinerType: scanner_domain.AntminerCgi,
 		Owner:     "test owner",
@@ -205,12 +212,17 @@ func DevMigrate(db *gorm.DB) error {
 	}
 
 	alertA := scanner_repo.Alert{
-		Name:      "alert A",
-		Value:     50, // 50%
-		Threshold: scanner_domain.ThresholdRate,
-		Condition: scanner_domain.Hashrate,
-		Action:    scanner_domain.Reboot,
-		Layer:     scanner_domain.InfoAlert,
+		Name:   "alert A",
+		Action: scanner_domain.Reboot,
+		Condition: []scanner_repo.AlertCondition{
+			{
+				Value:     50, // 50%
+				Threshold: scanner_domain.ThresholdRate,
+				Condition: scanner_domain.Hashrate,
+				Layer:     scanner_domain.InfoAlert,
+			},
+		},
+
 		Log: []scanner_repo.AlertLog{
 			{
 				Log: "test log from a",
@@ -219,12 +231,16 @@ func DevMigrate(db *gorm.DB) error {
 		ScannerID: scanner.ID,
 	}
 	alertB := scanner_repo.Alert{
-		Name:      "alert B",
-		Value:     10, // 10 machines
-		Threshold: scanner_domain.ThresholdCount,
-		Condition: scanner_domain.Temperature,
-		Action:    scanner_domain.Sleep,
-		Layer:     scanner_domain.InfoAlert,
+		Name:   "alert B",
+		Action: scanner_domain.Sleep,
+		Condition: []scanner_repo.AlertCondition{
+			{
+				Value:     10, // 10 machines
+				Threshold: scanner_domain.ThresholdCount,
+				Condition: scanner_domain.Temperature,
+				Layer:     scanner_domain.InfoAlert,
+			},
+		},
 		Log: []scanner_repo.AlertLog{
 			{
 				Log: "test log from b",

@@ -21,6 +21,7 @@ import (
 	scanner_repo "foxhound/internal/infrastructure/database/repositories/scanner"
 
 	miner_domain "foxhound/internal/application/miner/domain"
+	scanner_domain "foxhound/internal/application/scanner/domain"
 
 	ant_miner_cgi_queries "foxhound/internal/application/miner/ant_miner_cgi/queries"
 	ant_miner_cgi_service "foxhound/internal/application/miner/ant_miner_cgi/service"
@@ -234,28 +235,52 @@ func main() {
 
 			}
 
-			// // 4, Check Alerts
-			// // create a map object that covers alert conditions with flag value
+			// 4, Check Alerts
+			// create a map object that covers alert conditions with flag value
 			// antMinerCGIAlertsChannel := make(chan *ant_miner_cgi_service.AntminerCGI)
+			conditionCounter := make([]scanner_repo.AlertCondition, 0, len(fleet.Scanner.Alert.Condition))
+			for _, alertCondition := range fleet.Scanner.Alert.Condition {
+				conditionCounter = append(conditionCounter, alertCondition)
+			}
+			alertFlags := make(map[scanner_domain.AlertConditionType]bool, len(conditionCounter))
+			for _, alertCondition := range conditionCounter {
+				alertFlags[alertCondition.Condition] = false
+			}
 
-			// // instantiate the channel of map object with matric type being a key name and its key being the actual count
-			// // i.e. hashrateCount: 124
-			// conditionCounter := make(map[scanner_domain.AlertConditionType]uint)
-			// alertFlag := false
+			for antMinerCGIService := range antMinerCGIServiceChannel {
+				fmt.Println("ant miner alert response before checking the conditions")
+				for index, alertCondition := range fleet.Scanner.Alert.Condition {
+					switch alertCondition.Condition {
 
-			// for antMinerCGIService := range antMinerCGIServiceChannel {
-			// 	fmt.Println("ant miner alert response before checking the conditions ")
+					case scanner_domain.Hashrate:
+						if antMinerCGIService.Stats.HashRate > 100 {
+							conditionCounter[index].Value = conditionCounter[index].Value + 1
+						}
 
-			// 	// you have access to all the miners in the channel
-			// 	// but you can go through them only once due to the nature of channel
+					case scanner_domain.Temperature:
+						// for _, temperature := range antminercgiservice.temperature {
 
-			// 	// conditionCounter[domain.Hashrate] =
+						// 	// find the highest temp in each chain
+						// 	// and if the highest temp is greater than the alert condition value
+						// 	// increment the condition value
 
-			// 	// wg.Add(1)
-			// 	// go func(antMinerCGIAlert *ant_miner_cgi_service.AntminerCGI) {
-			// 	// 	defer wg.Done()
-			// 	// }(antMinerCGIAlert)
-			// }
+						// }
+					case scanner_domain.FanSpeed:
+						// for _, fan := range antMinerCGIService.Fan {
+						// 	if fan.Value > alertCondition.Value {
+
+						// 	}
+						// }
+					case scanner_domain.PoolShares:
+						// for _, pool := range antMinerCGIService.Pools {
+						// if pool.Shares < alertCondition.Value {
+						// 	alertFlag = true
+						// }
+						// }
+					}
+				}
+
+			}
 
 			// wg.Wait()
 			// close(antMinerCGIAlertsChannel)
