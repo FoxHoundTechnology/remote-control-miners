@@ -37,10 +37,10 @@ type Alert struct {
 
 type AlertCondition struct {
 	gorm.Model
-	Value     domain.AlertValue
-	Threshold domain.AlertThresholdType `gorm:"comment:'ThresholdCount=0, ThresholdRate=1'"`
-	Condition domain.AlertConditionType `gorm:"comment:'Hashrate=0, Temperature=1, FanSpeed=2, PoolShares=3, OfflineMiners=4, MissingHashboards=5'"`
-	Layer     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
+	TriggerValue  domain.AlertTriggerValue
+	ThresholdType domain.AlertThresholdType `gorm:"comment:'ThresholdCount=0, ThresholdRate=1'"`
+	ConditionType domain.AlertConditionType `gorm:"comment:'Hashrate=0, Temperature=1, FanSpeed=2, PoolShares=3, OfflineMiners=4, MissingHashboards=5'"`
+	LayerType     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
 
 	AlertID uint
 }
