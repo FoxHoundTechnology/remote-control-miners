@@ -29,6 +29,8 @@ import (
 
 // TODO: select statement for different vendors
 // TODO: R&D for pool library's memory leak
+// TODO: logic for identifying the active pool
+// TODO: logic for pool change
 
 func main() {
 
@@ -109,6 +111,7 @@ func main() {
 				workerErrors <- fmt.Errorf("invalid IP address format")
 				return
 			}
+
 			var ips []net.IP
 			for ip := startIP.To16(); ; inc(ip) {
 				newIP := make(net.IP, len(ip))
@@ -172,7 +175,7 @@ func main() {
 							MacAddress: rawGetSystemInfoResponse.MACAddress,
 						},
 					)
-					// fill the struct inside of the channel
+					// feed the ARPResponses channel with the antMinerCGI object
 					ARPResponses <- antMinerCGI
 				}(i, ip)
 			} // end of the ARP request
@@ -181,6 +184,7 @@ func main() {
 			close(ARPResponses)
 
 			// 3, Execute all the service codes to update the data fields in the ARPResponses channel
+			// TODO: make two channels : one for alert and the other one for updating the database
 			antMinerCGIServiceChannel := make(chan *ant_miner_cgi_service.AntminerCGI, len(ARPResponses))
 			var wgAntMinerCGIService sync.WaitGroup
 
@@ -235,57 +239,126 @@ func main() {
 
 			}
 
-			// 4, Check Alerts
-			// create a map object that covers alert conditions with flag value
-			// antMinerCGIAlertsChannel := make(chan *ant_miner_cgi_service.AntminerCGI)
-			conditionCounter := make([]scanner_repo.AlertCondition, 0, len(fleet.Scanner.Alert.Condition))
+			// 4, Check Alerts and Update the Database
+			conditionCounter := make(map[scanner_domain.AlertConditionType]int) // machine count
+			// NOTE: if conditions are met, set the alert flags to true. Otherwise, set it to false
+			alertFlag := true
+
 			for _, alertCondition := range fleet.Scanner.Alert.Condition {
-				conditionCounter = append(conditionCounter, alertCondition)
-			}
-			alertFlags := make(map[scanner_domain.AlertConditionType]bool, len(conditionCounter))
-			for _, alertCondition := range conditionCounter {
-				alertFlags[alertCondition.Condition] = false
+				conditionCounter[alertCondition.ConditionType] = 0 // default TriggerValue
 			}
 
 			for antMinerCGIService := range antMinerCGIServiceChannel {
+
 				fmt.Println("ant miner alert response before checking the conditions")
-				for index, alertCondition := range fleet.Scanner.Alert.Condition {
-					switch alertCondition.Condition {
+				for _, alertCondition := range fleet.Scanner.Alert.Condition {
+					switch alertCondition.ConditionType {
 
 					case scanner_domain.Hashrate:
-						if antMinerCGIService.Stats.HashRate > 100 {
-							conditionCounter[index].Value = conditionCounter[index].Value + 1
+
+						if antMinerCGIService.Stats.HashRate >= float64(alertCondition.TriggerValue) {
+							conditionCounter[scanner_domain.Hashrate]++
 						}
 
 					case scanner_domain.Temperature:
-						// for _, temperature := range antminercgiservice.temperature {
 
-						// 	// find the highest temp in each chain
-						// 	// and if the highest temp is greater than the alert condition value
-						// 	// increment the condition value
+						maxTemperature := 0
+						for _, temperatureSensor := range antMinerCGIService.Temperature {
+							for _, pcbSensor := range temperatureSensor.PcbSensors {
+								if pcbSensor.Temperature > maxTemperature {
+									maxTemperature = pcbSensor.Temperature
+								}
+							}
+						}
 
-						// }
+						if maxTemperature >= int(alertCondition.TriggerValue) {
+							conditionCounter[scanner_domain.Temperature]++
+						}
+
 					case scanner_domain.FanSpeed:
-						// for _, fan := range antMinerCGIService.Fan {
-						// 	if fan.Value > alertCondition.Value {
 
-						// 	}
-						// }
+						maxFanSpeed := 0
+						for _, fanSensor := range antMinerCGIService.Fan {
+							if fanSensor.Speed > maxFanSpeed {
+								maxFanSpeed = fanSensor.Speed
+							}
+						}
+
+						if maxFanSpeed >= int(alertCondition.TriggerValue) {
+							conditionCounter[scanner_domain.FanSpeed]++
+						}
+
 					case scanner_domain.PoolShares:
-						// for _, pool := range antMinerCGIService.Pools {
-						// if pool.Shares < alertCondition.Value {
-						// 	alertFlag = true
-						// }
-						// }
+						// NOTE: retrieve only the first pool for now, assuming that the pool switch's occureance is rare
+						if antMinerCGIService.Pools[0].Accepted <= int(alertCondition.TriggerValue) {
+							conditionCounter[scanner_domain.PoolShares]++
+						}
+						// case scanner_domain.OfflineMiners:
 					}
+				}
+
+				//  feeding the updated fleet payload for updating the database
+				fleet.Miners = append(fleet.Miners, miner_repo.Miner{
+					Miner:  antMinerCGIService.Miner,
+					Stats:  antMinerCGIService.Stats,
+					Config: antMinerCGIService.Config,
+					Mode:   antMinerCGIService.Mode, // TODO: update logic should be done in the service method in the interface
+					Status: antMinerCGIService.Status,
+				})
+			}
+
+			for _, alertCondition := range fleet.Scanner.Alert.Condition {
+				if conditionCounter[alertCondition.ConditionType] >= int(alertCondition.MachineCount) {
+					// if all the conditions are met, the alertFlag
+					alertFlag = true
+				} else {
+					alertFlag = false
+				}
+			}
+
+			// (4, resolve the alert triggers)
+			if alertFlag {
+				fleet.Scanner.Alert.State = scanner_domain.Triggered
+				result := postgresDB.Where("name = ?", fleet.Scanner.Alert.Name).First(&fleet.Scanner.Alert)
+				if result.RowsAffected == 0 {
+					err := postgresDB.Create(&fleet.Scanner).Error
+					fmt.Println("Error in database create operation", err)
+				} else {
+					err := postgresDB.Where("name = ?", fleet.Scanner.Alert.Name).Save(&fleet.Scanner.Alert).Error
+					fmt.Println("Error in database save operation", err)
+				}
+
+				actionCommand := fleet.Scanner.Alert.Action
+
+				switch actionCommand {
+
+				case scanner_domain.Reboot:
+
+				case scanner_domain.Sleep:
+
+				case scanner_domain.Normal:
+
+				case scanner_domain.ChangePool:
+
 				}
 
 			}
 
-			// wg.Wait()
-			// close(antMinerCGIAlertsChannel)
+			// 5, Update the database
+			//     the fleet stats (after the triggers get activated) gets reflected in the next periodic update
+			// TODO: batch - tx. operation
+			for _, miner := range fleet.Miners {
+				result := postgresDB.Where("mac_address = ?", miner.Miner.MacAddress).First(&miner)
 
-			// 4, Update the database
+				if result.RowsAffected == 0 {
+					err := postgresDB.Create(&miner).Error
+					fmt.Println("Error in database create operation", err)
+				} else {
+					err := postgresDB.Where("mac_address = ?", miner.Miner.MacAddress).Save(&miner).Error
+					fmt.Println("Error in database save operation", err)
+				}
+
+			}
 
 		})
 	}

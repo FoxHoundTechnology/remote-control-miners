@@ -3,16 +3,18 @@ package queries
 import (
 	"encoding/json"
 	"fmt"
-	miner "foxhound/internal/application/miner/domain"
 	"foxhound/pkg/http_auth"
 	"io"
 	"net/http"
+
+	miner "foxhound/internal/application/miner/domain"
 
 	"github.com/sirupsen/logrus"
 )
 
 // cgi-bin/stats.cgi
 // TODO: default values for response object
+// TODO: missing hash board
 
 type rawGetStatsResponse struct {
 	Status Status  `json:"STATUS"`

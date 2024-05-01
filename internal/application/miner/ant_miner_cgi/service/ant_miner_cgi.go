@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"log"
 	"sync"
 
 	commands "foxhound/internal/application/miner/ant_miner_cgi/commands"
@@ -10,7 +9,7 @@ import (
 	domain "foxhound/internal/application/miner/domain"
 )
 
-// TODO: fix pool settings and pool stats
+// TODO: add the logic for updating the pool "stats"
 // TODO: custom errors & logger for miner service
 // TODO: add contexts of miner API responses
 // TODO: add comments
@@ -66,8 +65,6 @@ func (a *AntminerCGI) CheckConfig() error {
 	a.FreqLevel = GetMinerConfigResponse.FreqLevel
 	a.Pools = GetMinerConfigResponse.Pools
 	a.Mode = domain.Mode(GetMinerConfigResponse.MinerMode)
-
-	log.Println("CHECK CONFIG --->>", a.FanCtrl, a.FanPwm, a.FreqLevel, a.Pools, a.Mode)
 
 	return nil
 }
@@ -254,8 +251,6 @@ func (a *AntminerCGI) ChangePool(pools []domain.Pool) error {
 
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
-
-	// TOOD: add the logic for updating the pool "stats"
 
 	return nil
 }
