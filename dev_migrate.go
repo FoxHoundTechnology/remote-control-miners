@@ -173,7 +173,7 @@ func DevMigrate(db *gorm.DB) error {
 
 	// TODO: batch or tx. operation
 	for _, miner := range miners {
-		result := db.Where("mac_address = ?", miner.Miner.MacAddress).First(&miner.Miner)
+		result := db.Where("mac_address = ?", miner.Miner.MacAddress).First(&miner)
 
 		if result.RowsAffected == 0 {
 			err := db.Create(&miner).Error

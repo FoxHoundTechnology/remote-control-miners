@@ -186,29 +186,30 @@ func main() {
 			// 3, Execute all the service codes to update the data fields in the ARPResponses channel
 			// TODO: make two channels : one for alert and the other one for updating the database
 			antMinerCGIServiceChannel := make(chan *ant_miner_cgi_service.AntminerCGI, len(ARPResponses))
+
 			var wgAntMinerCGIService sync.WaitGroup
 
-			for antMinerCGIService := range ARPResponses {
-				fmt.Println("ant miner service response before executing the commands", *antMinerCGIService)
+			for antMinerCGI := range ARPResponses {
+				fmt.Println("ant miner service response before executing the commands", *antMinerCGI)
 				wgAntMinerCGIService.Add(1)
-				go func(antMinerCGIService *ant_miner_cgi_service.AntminerCGI) {
+				go func(antMinerCGI *ant_miner_cgi_service.AntminerCGI) {
 					defer wgAntMinerCGIService.Done()
 
-					err := antMinerCGIService.CheckStats()
+					err := antMinerCGI.CheckStats()
 					if err != nil {
 						log.Printf("Error checking stats: %v", err)
 
 						workerErrors <- err
 						return
 					}
-					err = antMinerCGIService.CheckPools()
+					err = antMinerCGI.CheckPools()
 					if err != nil {
 						log.Printf("Error checking pools: %v", err)
 
 						workerErrors <- err
 						return
 					}
-					err = antMinerCGIService.CheckConfig()
+					err = antMinerCGI.CheckConfig()
 					if err != nil {
 						log.Printf("Error checking config: %v", err)
 
@@ -216,54 +217,44 @@ func main() {
 						return
 					}
 
-					log.Println("antMinerCGIService hashrate:", antMinerCGIService.Stats.HashRate)
-					log.Println("antMinerCGIService pool:", antMinerCGIService.Pools[0].Url)
-					log.Println("antMinerCGIService username:", antMinerCGIService.Config.Username)
-					log.Println("antMInerCGIService firmware", antMinerCGIService.Config.Firmware)
+					antMinerCGIServiceChannel <- antMinerCGI
 
-					log.Printf("Submitting miner info to channel: %+v", antMinerCGIService)
-					antMinerCGIServiceChannel <- antMinerCGIService
-
-				}(antMinerCGIService)
+				}(antMinerCGI)
 			}
 			// waiting for the ongoing antMinerCGIService Channel
 			wgAntMinerCGIService.Wait()
-			close(antMinerCGIServiceChannel)
+			close(antMinerCGIServiceChannel) // for executing the alert commands
 
-			log.Println("------MINER INFO-------")
-			for minerInfo := range antMinerCGIServiceChannel {
-
-				log.Println(minerInfo)
-
-				log.Println("=======INFO END =======")
-
+			// make the array for the service channel
+			antMinerCGIServiceArray := make([]*ant_miner_cgi_service.AntminerCGI, 0)
+			for antMinerCGI := range antMinerCGIServiceChannel {
+				antMinerCGIServiceArray = append(antMinerCGIServiceArray, antMinerCGI)
 			}
 
 			// 4, Check Alerts and Update the Database
 			conditionCounter := make(map[scanner_domain.AlertConditionType]int) // machine count
-			// NOTE: if conditions are met, set the alert flags to true. Otherwise, set it to false
+			// NOTE: if conditions are met, set the alert flag to true. Otherwise, set it to false
 			alertFlag := true
 
 			for _, alertCondition := range fleet.Scanner.Alert.Condition {
 				conditionCounter[alertCondition.ConditionType] = 0 // default TriggerValue
 			}
 
-			for antMinerCGIService := range antMinerCGIServiceChannel {
-
+			for _, antMinerCGIAlert := range antMinerCGIServiceArray {
 				fmt.Println("ant miner alert response before checking the conditions")
 				for _, alertCondition := range fleet.Scanner.Alert.Condition {
 					switch alertCondition.ConditionType {
 
 					case scanner_domain.Hashrate:
 
-						if antMinerCGIService.Stats.HashRate >= float64(alertCondition.TriggerValue) {
+						if antMinerCGIAlert.Stats.HashRate >= float64(alertCondition.TriggerValue) {
 							conditionCounter[scanner_domain.Hashrate]++
 						}
 
 					case scanner_domain.Temperature:
 
 						maxTemperature := 0
-						for _, temperatureSensor := range antMinerCGIService.Temperature {
+						for _, temperatureSensor := range antMinerCGIAlert.Temperature {
 							for _, pcbSensor := range temperatureSensor.PcbSensors {
 								if pcbSensor.Temperature > maxTemperature {
 									maxTemperature = pcbSensor.Temperature
@@ -278,7 +269,7 @@ func main() {
 					case scanner_domain.FanSpeed:
 
 						maxFanSpeed := 0
-						for _, fanSensor := range antMinerCGIService.Fan {
+						for _, fanSensor := range antMinerCGIAlert.Fan {
 							if fanSensor.Speed > maxFanSpeed {
 								maxFanSpeed = fanSensor.Speed
 							}
@@ -290,21 +281,13 @@ func main() {
 
 					case scanner_domain.PoolShares:
 						// NOTE: retrieve only the first pool for now, assuming that the pool switch's occureance is rare
-						if antMinerCGIService.Pools[0].Accepted <= int(alertCondition.TriggerValue) {
+						if antMinerCGIAlert.Pools[0].Accepted <= int(alertCondition.TriggerValue) {
 							conditionCounter[scanner_domain.PoolShares]++
 						}
 						// case scanner_domain.OfflineMiners:
 					}
 				}
 
-				//  feeding the updated fleet payload for updating the database
-				fleet.Miners = append(fleet.Miners, miner_repo.Miner{
-					Miner:  antMinerCGIService.Miner,
-					Stats:  antMinerCGIService.Stats,
-					Config: antMinerCGIService.Config,
-					Mode:   antMinerCGIService.Mode, // TODO: update logic should be done in the service method in the interface
-					Status: antMinerCGIService.Status,
-				})
 			}
 
 			for _, alertCondition := range fleet.Scanner.Alert.Condition {
@@ -319,6 +302,7 @@ func main() {
 			// (4, resolve the alert triggers)
 			if alertFlag {
 				fleet.Scanner.Alert.State = scanner_domain.Triggered
+
 				result := postgresDB.Where("name = ?", fleet.Scanner.Alert.Name).First(&fleet.Scanner.Alert)
 				if result.RowsAffected == 0 {
 					err := postgresDB.Create(&fleet.Scanner).Error
@@ -334,43 +318,85 @@ func main() {
 
 				case scanner_domain.Reboot:
 
+					for _, antMinerCGIService := range antMinerCGIServiceArray {
+						err := antMinerCGIService.Reboot()
+						if err != nil {
+							log.Printf("Error rebooting the miner: %v", err)
+						}
+					}
+
 				case scanner_domain.Sleep:
+
+					for _, antMinerCGIService := range antMinerCGIServiceArray {
+						err := antMinerCGIService.SetSleepMode()
+						if err != nil {
+							log.Printf("Error sleeping the miner: %v", err)
+						}
+					}
 
 				case scanner_domain.Normal:
 
+					for _, antMinerCGIService := range antMinerCGIServiceArray {
+						err := antMinerCGIService.SetNormalMode()
+						if err != nil {
+							log.Printf("Error setting the miner to normal mode: %v", err)
+						}
+					}
+
 				case scanner_domain.ChangePool:
-
+					// TODO: logic for pool change
 				}
-
 			}
 
-			// 5, Update the database
-			//     the fleet stats (after the triggers get activated) gets reflected in the next periodic update
-			// TODO: batch - tx. operation
-			for _, miner := range fleet.Miners {
-				result := postgresDB.Where("mac_address = ?", miner.Miner.MacAddress).First(&miner)
-
-				if result.RowsAffected == 0 {
-					err := postgresDB.Create(&miner).Error
-					fmt.Println("Error in database create operation", err)
-				} else {
-					err := postgresDB.Where("mac_address = ?", miner.Miner.MacAddress).Save(&miner).Error
-					fmt.Println("Error in database save operation", err)
+			for _, antMinerCGIService := range antMinerCGIServiceArray {
+				minerModel := miner_repo.Miner{
+					Miner:  antMinerCGIService.Miner,
+					Stats:  antMinerCGIService.Stats,
+					Config: antMinerCGIService.Config,
+					Mode:   antMinerCGIService.Mode, // TODO: update logic should be done in the service method in the interface
+					Status: antMinerCGIService.Status,
+					Pools: []miner_repo.Pool{ // pool can be manually added here
+						{
+							Pool: miner_domain.Pool{
+								Url:      antMinerCGIService.Pools[0].Url,
+								User:     antMinerCGIService.Pools[0].User,
+								Pass:     antMinerCGIService.Pools[0].Pass,
+								Status:   antMinerCGIService.Pools[0].Status,
+								Accepted: antMinerCGIService.Pools[0].Accepted,
+								Rejected: antMinerCGIService.Pools[0].Rejected,
+								Stale:    antMinerCGIService.Pools[0].Stale,
+							},
+						},
+					}, // TODO: fill the pool data
+					Temperature: []miner_repo.TemperatureSensor{},
+					Fan:         []miner_repo.FanSensor{},
+					FleetID:     fleet.ID,
 				}
 
+				for _, temperatureSensor := range antMinerCGIService.Temperature {
+				}
+
+				for _, fanSensor := range antMinerCGIService.Fan {
+				}
+
+				// 5, Update the database
+				//    the fleet stats (after the triggers get activated) gets reflected in the next periodic update
+				// TODO: batch - tx. operation
+				result := postgresDB.Where("mac_address = ?", antMinerCGIService.Miner.MacAddress).First(&minerModel)
+				if result.RowsAffected == 0 {
+					err := postgresDB.Create(&minerModel).Error
+					fmt.Println("Error in database create operation", err)
+				} else {
+					err := postgresDB.Where("mac_address = ?", antMinerCGIService.Miner.MacAddress).Save(&minerModel).Error
+					fmt.Println("Error in database save operation", err)
+				}
 			}
 
 		})
 	}
 
-	// After updating the miner payload (in the application layer),
-	// update the miner payload to the database with upsert operation
-
 	// kill go routines after the fleet -> scanner -> miner list is processed
 }
-
-// }
-// }
 
 func inc(ip net.IP) {
 	for j := len(ip) - 1; j >= 0; j-- {
