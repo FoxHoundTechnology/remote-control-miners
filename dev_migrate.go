@@ -216,10 +216,11 @@ func DevMigrate(db *gorm.DB) error {
 		Action: scanner_domain.Reboot,
 		Condition: []scanner_repo.AlertCondition{
 			{
-				Value:     50, // 50%
-				Threshold: scanner_domain.ThresholdRate,
-				Condition: scanner_domain.Hashrate,
-				Layer:     scanner_domain.InfoAlert,
+				TriggerValue:  50,                  // 50 TH/s
+				MachineCount:  100,                 // 100 machines
+				ThresholdType: scanner_domain.Rate, // %
+				ConditionType: scanner_domain.Hashrate,
+				LayerType:     scanner_domain.InfoAlert,
 			},
 		},
 
@@ -235,10 +236,11 @@ func DevMigrate(db *gorm.DB) error {
 		Action: scanner_domain.Sleep,
 		Condition: []scanner_repo.AlertCondition{
 			{
-				Value:     10, // 10 machines
-				Threshold: scanner_domain.ThresholdCount,
-				Condition: scanner_domain.Temperature,
-				Layer:     scanner_domain.InfoAlert,
+				TriggerValue:  80,                   // 80C
+				MachineCount:  100,                  // 100 machines
+				ThresholdType: scanner_domain.Count, // machines
+				ConditionType: scanner_domain.Temperature,
+				LayerType:     scanner_domain.InfoAlert,
 			},
 		},
 		Log: []scanner_repo.AlertLog{

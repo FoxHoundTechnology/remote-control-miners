@@ -13,13 +13,19 @@ type Config struct {
 	Password string
 }
 
-type AlertValue int
+// threshold value for alert (i.e. 100 TH/s, 70 degrees Celsius, etc.)
+type AlertTriggerValue int
 
+// threshold count (i.e. count as a number of machine, rate)
+type AlertMachineCount int
+
+// threshold type (i.e. "# of machines: 0 ~ X" or "% of machines: 0 ~ 100" in a fleet)
+// depending on the threshold type below
 type AlertThresholdType int
 
 const (
-	ThresholdCount AlertThresholdType = iota // 0
-	ThresholdRate                            // 1
+	Count AlertThresholdType = iota // 0
+	Rate                            // 1
 )
 
 type AlertConditionType int
