@@ -42,10 +42,9 @@ const (
 type AlertActionType int
 
 const (
-	Reboot     AlertActionType = iota // 0
-	Sleep                             // 1
-	Normal                            // 2
-	ChangePool                        // 3
+	Reboot AlertActionType = iota // 0
+	Sleep                         // 1
+	Normal                        // 2
 )
 
 type AlertLayerType int

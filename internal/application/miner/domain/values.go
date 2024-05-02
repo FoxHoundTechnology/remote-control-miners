@@ -16,11 +16,14 @@ const (
 type Status int
 
 const (
-	Online   Status = iota // 0
-	Offline                // 1
-	Disabled               // 2
-	Error                  // 3
-	Warning                // 4
+	Online                Status = iota // 0
+	Offline                             // 1
+	Disabled                            // 2
+	HashrateError                       // 3
+	TemperatureError                    // 4
+	FanSpeedError                       // 5
+	MissingHashboardError               // 6
+	PoolShareError                      // 7
 )
 
 type Config struct {
