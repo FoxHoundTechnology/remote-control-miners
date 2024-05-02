@@ -26,7 +26,7 @@ type Scanner struct {
 type Alert struct {
 	gorm.Model
 	Name   string                 `gorm:"unique"`
-	Action domain.AlertActionType `gorm:"comment:'Reboot=0, Sleep=1, Normal=2, ChangePool=3'"`
+	Action domain.AlertActionType `gorm:"comment:'Reboot=0, Sleep=1, Normal=2'"`
 	State  domain.AlertState      `gorm:"comment:'Monitoring=0, Triggered=1, Resolving=2, Resolved=3'"`
 
 	Condition []AlertCondition `gorm:"foreignKey:AlertID;references:ID"`
@@ -39,7 +39,7 @@ type AlertCondition struct {
 	gorm.Model
 	TriggerValue  domain.AlertTriggerValue  `gorm:"comment:'Value for threshold (e.g. 100 TH/s, 80°C, and 100 RPM)'"`
 	MachineCount  domain.AlertMachineCount  `gorm:"comment:'Number of machines for alert to get triggerred'"`
-	ThresholdType domain.AlertThresholdType `gorm:"comment:'ThresholdCount=0, ThresholdRate=1'"`
+	ThresholdType domain.AlertThresholdType `gorm:"comment:'ThresholdCount=1, ThresholdRate=1'"`
 	ConditionType domain.AlertConditionType `gorm:"comment:'Hashrate=0, Temperature=1, FanSpeed=2, PoolShares=3, OfflineMiners=4, MissingHashboards=5'"`
 	LayerType     domain.AlertLayerType     `gorm:"comment:'InfoAlert=0, WarningAlert=1, ErrorAlert=2, FataltAlert=3'"`
 
