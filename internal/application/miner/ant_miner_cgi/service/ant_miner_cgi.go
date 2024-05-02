@@ -34,7 +34,7 @@ func NewAntminerCGI(config domain.Config, miner domain.Miner) *AntminerCGI {
 	return &AntminerCGI{
 		Miner:  miner,
 		Mode:   domain.SleepMode,
-		Status: domain.Offline,
+		Status: domain.Online,
 		Config: config,
 		Stats: domain.Stats{
 			HashRate:  0,
