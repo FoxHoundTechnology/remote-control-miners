@@ -76,7 +76,7 @@ func main() {
 	workerErrors := make(chan error)
 	defer close(workerErrors)
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(60 * time.Second)
 	defer ticker.Stop()
 
 	// Create a context that can be cancelled
@@ -313,8 +313,6 @@ func main() {
 					}
 				}
 
-				fmt.Println("Alert flag result:::", alertFlag)
-
 				// (4, resolve the alert triggers)
 				if alertFlag {
 					fleet.Scanner.Alert.State = scanner_domain.Triggered
@@ -373,16 +371,15 @@ func main() {
 								}
 							}(antMinerCGIService)
 						}
+
 					}
 					wgAlert.Wait()
-				}
+				} // end of the case for alertFlag = true
 
-				fmt.Println("STATS BEFORE FORLOOP OF MINER MODELS ", len(antMinerCGIServiceArray))
 				for _, antMinerCGIService := range antMinerCGIServiceArray {
 
 					var miner miner_repo.Miner
 					result := postgresDB.First(&miner, "mac_address = ?", antMinerCGIService.Miner.MacAddress)
-					fmt.Println("RESULST FROM first find for the miner repo", result.RowsAffected)
 
 					if result.RowsAffected == 0 {
 						fmt.Println("ROWS AFFECTED IS 0 so CREATING A NEW ONE")
@@ -452,11 +449,6 @@ func main() {
 						if err != nil {
 							fmt.Println("error in preload models ", err)
 						}
-						fmt.Println("old hash ++++>", existingMiner.Stats.HashRate)
-						fmt.Println("new hashj +++>", antMinerCGIService.Stats.HashRate)
-						fmt.Println("pools +++>", existingMiner.Pools)
-
-						fmt.Println("END OF PRELOASD RESULT")
 
 						existingMiner.Miner.IPAddress = antMinerCGIService.Miner.IPAddress
 						existingMiner.Miner.MacAddress = antMinerCGIService.Miner.MacAddress
@@ -487,7 +479,6 @@ func main() {
 						}
 					}
 				}
-
 				fmt.Println("========================END OF WORKER=========================")
 
 			})
