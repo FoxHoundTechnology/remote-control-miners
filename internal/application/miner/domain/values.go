@@ -49,11 +49,7 @@ type Pool struct {
 }
 type TemperatureSensor struct {
 	Name       string
-	PcbSensors []PcbSensor
-}
-
-type PcbSensor struct {
-	Temperature int
+	PcbSensors []int
 }
 
 type FanSensor struct {
