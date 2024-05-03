@@ -155,6 +155,8 @@ func (a *AntminerCGI) CheckStats() error {
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
 
+	fmt.Println("rate 5s", GetStatsResponse.Rate5s)
+
 	a.Stats = domain.Stats{
 		HashRate:  GetStatsResponse.Rate5s,
 		RateIdeal: GetStatsResponse.RateIdeal,
@@ -162,14 +164,9 @@ func (a *AntminerCGI) CheckStats() error {
 	}
 	a.Mode = domain.Mode(GetStatsResponse.Mode)
 
-	for index, temperature := range GetStatsResponse.Chain {
-		pcbSensors := []domain.PcbSensor{}
-		for _, tempereture := range temperature.TempPcb {
-			pcbSensors = append(pcbSensors, domain.PcbSensor{
-				Temperature: tempereture,
-			})
-		}
-
+	for index, tempSensor := range GetStatsResponse.Chain {
+		pcbSensors := []int{}
+		pcbSensors = append(pcbSensors, tempSensor.TempPcb...)
 		a.Temperature = append(a.Temperature, domain.TemperatureSensor{
 			Name:       fmt.Sprintf("Chain %d", index),
 			PcbSensors: pcbSensors,

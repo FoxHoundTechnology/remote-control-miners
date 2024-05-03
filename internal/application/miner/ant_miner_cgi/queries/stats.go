@@ -74,7 +74,6 @@ type StatsResponse struct {
 func AntMinerCGIGetStats(username, password, ipAddress string) (*StatsResponse, error) {
 
 	t := http_auth.NewTransport(username, password)
-
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/stats.cgi", ipAddress), nil)
 	if err != nil {
 
@@ -116,19 +115,22 @@ func AntMinerCGIGetStats(username, password, ipAddress string) (*StatsResponse, 
 		return nil, err
 	}
 
-	fmt.Println("rawGetStatsResponse: ",
-		StatsResponse{
-			Status:    rawGetStatsResponse.Status.Status,
-			Elapsed:   rawGetStatsResponse.Stats[0].Elapsed,
-			RateIdeal: rawGetStatsResponse.Stats[0].RateIdeal,
-			Rate5s:    rawGetStatsResponse.Stats[0].Rate5s,
-			RateUnit:  rawGetStatsResponse.Stats[0].RateUnit,
-			Mode:      miner.Mode(rawGetStatsResponse.Stats[0].MinerMode),
-			Chain:     rawGetStatsResponse.Stats[0].Chain,
-			Fan:       rawGetStatsResponse.Stats[0].Fan,
-			ChainNum:  rawGetStatsResponse.Stats[0].ChainNum,
-		},
-	)
+	if len(rawGetStatsResponse.Stats) == 0 {
+		fmt.Println("EDGE CASE ---------------------")
+		fmt.Println("ip address", ipAddress)
+
+		return &StatsResponse{
+			Status:    "S",
+			Elapsed:   0,
+			RateIdeal: 0,
+			Rate5s:    0,
+			RateUnit:  "GH/s",
+			Mode:      miner.SleepMode,
+			Chain:     []Chain{},
+			Fan:       []int{},
+			ChainNum:  0,
+		}, nil
+	}
 
 	return &StatsResponse{
 		Status:    rawGetStatsResponse.Status.Status,
@@ -136,9 +138,9 @@ func AntMinerCGIGetStats(username, password, ipAddress string) (*StatsResponse, 
 		RateIdeal: rawGetStatsResponse.Stats[0].RateIdeal,
 		Rate5s:    rawGetStatsResponse.Stats[0].Rate5s,
 		RateUnit:  rawGetStatsResponse.Stats[0].RateUnit,
-		Mode:      miner.Mode(rawGetStatsResponse.Stats[0].MinerMode),
-		Chain:     rawGetStatsResponse.Stats[0].Chain,
-		Fan:       rawGetStatsResponse.Stats[0].Fan,
-		ChainNum:  rawGetStatsResponse.Stats[0].ChainNum,
+		// Mode:      miner.Mode(rawGetStatsResponse.Stats[0].MinerMode),
+		Chain:    rawGetStatsResponse.Stats[0].Chain,
+		Fan:      rawGetStatsResponse.Stats[0].Fan,
+		ChainNum: rawGetStatsResponse.Stats[0].ChainNum,
 	}, nil
 }
