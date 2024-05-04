@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -31,7 +32,6 @@ import (
 // TODO: select statement for different vendors
 // TODO: R&D for pool library's memory leak
 // TODO: logic for identifying the active pool
-// TODO: logic for pool change
 // TODO: logic for combined miner error supports
 
 func main() {
@@ -54,13 +54,28 @@ func main() {
 		log.Fatalf("Failed to migrate the database: %v", err)
 	}
 
-	DevMigrate(postgresDB)
+	configFile, err := os.Open("fxhnd.json")
+	if err != nil {
+		log.Fatalf("Failed to open file: %s", err)
+	}
+	defer configFile.Close()
+	DevMigrate(postgresDB, configFile)
 
 	router := gin.Default()
+	// Util endpoint for hard-reset
+	router.GET("/reset", func(c *gin.Context) {
+		// postgresDB.Exec("DROP TABLE IF EXISTS pools;")
+		// postgresDB.Exec("DROP TABLE IF EXISTS miner_logs;")
+		// postgresDB.Exec("DROP TABLE IF EXISTS miners;")
 
-	// Define routes
-	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hello, world!")
+		// postgresDB.Exec("DROP TABLE IF EXISTS alerts_logs;")
+		// postgresDB.Exec("DROP TABLE IF EXISTS alerts_conditions;")
+		// postgresDB.Exec("DROP TABLE IF EXISTS alerts;")
+		// postgresDB.Exec("DROP TABLE IF EXISTS scanners;")
+
+		// postgresDB.Exec("DROP TABLE IF EXISTS fleets;")
+
+		c.String(http.StatusOK, "Reset Command: Executed")
 	})
 
 	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
@@ -68,8 +83,9 @@ func main() {
 	// scannerRepo := scanner_repo.NewScannerRepository(postgresDB)
 
 	panicHandler := func(p interface{}) {
-		fmt.Println("worker paniced %v", p)
+		log.Println("worker paniced %v", p)
 	}
+
 	pool := pond.New(20, 100, pond.PanicHandler(panicHandler))
 	defer pool.StopAndWait()
 
@@ -382,8 +398,6 @@ func main() {
 					result := postgresDB.First(&miner, "mac_address = ?", antMinerCGIService.Miner.MacAddress)
 
 					if result.RowsAffected == 0 {
-						fmt.Println("ROWS AFFECTED IS 0 so CREATING A NEW ONE")
-
 						miner.Miner = miner_domain.Miner{
 							MacAddress: antMinerCGIService.Miner.MacAddress,
 							IPAddress:  antMinerCGIService.Miner.IPAddress,
@@ -480,7 +494,6 @@ func main() {
 					}
 				}
 				fmt.Println("========================END OF WORKER=========================")
-
 			})
 		}
 	}
