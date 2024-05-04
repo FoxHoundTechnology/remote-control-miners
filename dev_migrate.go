@@ -119,13 +119,12 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 				AlertID:       alert.ID,
 			}
 
-			if result := db.Where("condition_type = ?", alertCondition.ConditionType).First(&scanner_repo.Alert{}); result.RowsAffected == 0 {
-				if err := db.Create(&alert).Error; err != nil {
+			if result := db.Where("condition_type = ?", alertCondition.ConditionType).First(&scanner_repo.AlertCondition{}); result.RowsAffected == 0 {
+				if err := db.Create(&condition).Error; err != nil {
 					fmt.Println("ERROR IN ALERT", err)
 					return err
 				}
 			}
-
 		}
 	}
 	return nil

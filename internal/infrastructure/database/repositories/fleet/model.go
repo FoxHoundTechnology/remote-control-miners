@@ -9,7 +9,7 @@ import (
 
 type Fleet struct {
 	gorm.Model
-	Name    string `gorm:"unique"`
-	Miners  []miner_repo.Miner
-	Scanner scanner_repo.Scanner
+	Name    string               `gorm:"unique"`
+	Miners  []miner_repo.Miner   `gorm:"onDelete:CASCADE; onUpdate:CASCADE"`
+	Scanner scanner_repo.Scanner `gorm:"onDelete:CASCADE; onUpdate:CASCADE"`
 }

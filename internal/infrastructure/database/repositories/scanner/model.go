@@ -18,7 +18,7 @@ type Scanner struct {
 	MinerType domain.MinerType `gorm:"comment:'AntMinerCgi=0'"`
 	Owner     string
 
-	Alert Alert
+	Alert Alert `gorm:"onDelete:CASCADE; onUpdate:CASCADE"`
 
 	FleetID uint
 }
