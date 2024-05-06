@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/miner"
-	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/scanner"
+	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
+	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
 	"gorm.io/gorm"
 )

@@ -6,9 +6,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
+	"github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
 
-	miner "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
+	miner "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
 
 	"github.com/sirupsen/logrus"
 )

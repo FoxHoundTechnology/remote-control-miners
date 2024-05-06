@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/scanner/domain"
+	"github.com/FoxHoundTechnology/remote-control-miners/internal/application/scanner/domain"
 
 	"gorm.io/gorm"
 )
