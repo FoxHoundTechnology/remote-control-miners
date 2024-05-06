@@ -3,11 +3,12 @@ package queries
 import (
 	"encoding/json"
 	"fmt"
-	"foxhound/pkg/http_auth"
 	"io"
 	"net/http"
 
-	miner "foxhound/internal/application/miner/domain"
+	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
+
+	miner "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
 
 	"github.com/sirupsen/logrus"
 )

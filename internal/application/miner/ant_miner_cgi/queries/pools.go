@@ -3,9 +3,10 @@ package queries
 import (
 	"encoding/json"
 	"fmt"
-	"foxhound/pkg/http_auth"
 	"io"
 	"net/http"
+
+	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
 )
 
 // cgi-bin/pools.cgi: Get pool information.

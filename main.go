@@ -14,19 +14,19 @@ import (
 	"github.com/alitto/pond"
 	"github.com/gin-gonic/gin"
 
-	postgres "foxhound/internal/infrastructure/database/postgres"
+	postgres "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/postgres"
 
-	http_auth "foxhound/pkg/http_auth"
+	http_auth "github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
 
 	// TODO: db migration/seed
-	miner_domain "foxhound/internal/application/miner/domain"
-	fleet_repo "foxhound/internal/infrastructure/database/repositories/fleet"
-	miner_repo "foxhound/internal/infrastructure/database/repositories/miner"
-	scanner_repo "foxhound/internal/infrastructure/database/repositories/scanner"
+	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
+	fleet_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/fleet"
+	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/miner"
+	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/scanner"
 
-	ant_miner_cgi_queries "foxhound/internal/application/miner/ant_miner_cgi/queries"
-	ant_miner_cgi_service "foxhound/internal/application/miner/ant_miner_cgi/service"
-	scanner_domain "foxhound/internal/application/scanner/domain"
+	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/queries"
+	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/service"
+	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/scanner/domain"
 )
 
 // TODO: select statement for different vendors
@@ -35,7 +35,6 @@ import (
 // TODO: logic for combined miner error supports
 
 func main() {
-
 	postgresDB := postgres.Init()
 	err := postgresDB.AutoMigrate(
 		// NOTE: The order matters
@@ -78,6 +77,24 @@ func main() {
 		c.String(http.StatusOK, "Reset Command: Executed")
 	})
 
+	router.GET("/test", func(ctx *gin.Context) {
+		fmt.Println("testing the preload for miner fleets")
+
+		fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
+
+		fleets, err := fleetRepo.ListMinersByFleet()
+		if err != nil {
+			fmt.Println("err in fleet repo operation: %v", err)
+		}
+
+		fmt.Println("fleets <><><><>><<<>>>>>>", fleets[0].Miners)
+
+		ctx.String(
+			http.StatusOK, "success")
+	})
+
+	router.Run()
+
 	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
 	// minerRepo := miner_repo.NewMinerRepository(postgresDB)
 	// scannerRepo := scanner_repo.NewScannerRepository(postgresDB)
@@ -107,7 +124,7 @@ func main() {
 			// Example: you can simulate a task with a sleep
 		})
 
-		fleets, err := fleetRepo.List()
+		fleets, err := fleetRepo.ListScannersByFleet()
 		if err != nil {
 			fmt.Println("Error getting fleet list:", err)
 			// TODO: notify with alert layer 4
@@ -407,7 +424,6 @@ func main() {
 							RateIdeal: antMinerCGIService.Stats.RateIdeal,
 							Uptime:    antMinerCGIService.Stats.Uptime,
 						}
-
 						miner.Config = miner_domain.Config{
 							Username: antMinerCGIService.Config.Username,
 							Password: antMinerCGIService.Config.Password,

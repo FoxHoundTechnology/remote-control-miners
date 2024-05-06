@@ -6,10 +6,11 @@ import (
 	"log"
 	"os"
 
-	fleet_repo "foxhound/internal/infrastructure/database/repositories/fleet"
-	scanner_repo "foxhound/internal/infrastructure/database/repositories/scanner"
+	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/scanner"
 
-	scanner_domain "foxhound/internal/application/scanner/domain"
+	fleet_repo "github.com/FoxHoundTechnology/remote-control-miners/github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/fleet"
+
+	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/scanner/domain"
 
 	"gorm.io/gorm"
 )

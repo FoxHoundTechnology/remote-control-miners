@@ -8,8 +8,8 @@ import (
 	"io"
 	"net/http"
 
-	"foxhound/internal/application/miner/domain"
-	"foxhound/pkg/http_auth"
+	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
+	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
 )
 
 // cgi-bin/set_miner_conf.cgi: Set miner configuration.

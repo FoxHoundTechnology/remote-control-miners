@@ -7,7 +7,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: test forminerLog preload
 // TODO: WithContext method with the logic of timeout cancellation
+// TODO: pagination for operations related to fleet/miners
 // TODO: clause operation
 // TODO: delete with cascade
 type FleetRepository struct {
@@ -42,7 +44,7 @@ func (r *FleetRepository) Upsert(ctx context.Context, fleet *Fleet) (uint, error
 }
 
 // Fleet -> Scanner -> Alerts
-func (r *FleetRepository) List() ([]Fleet, error) {
+func (r *FleetRepository) ListScannersByFleet() ([]Fleet, error) {
 	var fleets []Fleet
 	err := r.db.Model(&Fleet{}).
 		Preload("Scanner").       // Preload the Scanner associated with each Fleet
@@ -54,4 +56,19 @@ func (r *FleetRepository) List() ([]Fleet, error) {
 	}
 
 	return fleets, err
+}
+
+// Fleet -> Miners
+func (r *FleetRepository) ListMinersByFleet() ([]Fleet, error) {
+	var fleets []Fleet
+	err := r.db.Model(&Fleet{}).
+		Preload("Miners").
+		Preload("Miners.Pools").
+		Preload("Miners.MinerLog").
+		Find(&fleets).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return fleets, nil
 }

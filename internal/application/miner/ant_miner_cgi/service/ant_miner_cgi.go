@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	commands "foxhound/internal/application/miner/ant_miner_cgi/commands"
-	queries "foxhound/internal/application/miner/ant_miner_cgi/queries"
-	domain "foxhound/internal/application/miner/domain"
+	commands "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/commands"
+	queries "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/queries"
+	domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
 )
 
 // TODO: add the logic for updating the pool "stats"
@@ -154,8 +154,6 @@ func (a *AntminerCGI) CheckStats() error {
 
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
-
-	fmt.Println("rate 5s", GetStatsResponse.Rate5s)
 
 	a.Stats = domain.Stats{
 		HashRate:  GetStatsResponse.Rate5s,

@@ -2,10 +2,11 @@ package queries
 
 import (
 	"fmt"
-	"foxhound/pkg/http_auth"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
 
 	"github.com/sirupsen/logrus"
 )

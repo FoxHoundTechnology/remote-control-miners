@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"foxhound/pkg/http_auth"
+	"github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
 
 	"io"
 	"net/http"
