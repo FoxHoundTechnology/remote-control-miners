@@ -14,19 +14,19 @@ import (
 	"github.com/alitto/pond"
 	"github.com/gin-gonic/gin"
 
-	postgres "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/postgres"
+	postgres "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/postgres"
 
-	http_auth "github.com/FoxHoundTechnology/remote-control-miners/foxhound/pkg/http_auth"
+	http_auth "github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
 
 	// TODO: db migration/seed
-	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
-	fleet_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/fleet"
-	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/miner"
-	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/infrastructure/database/repositories/scanner"
+	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
+	fleet_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/fleet"
+	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
+	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
-	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/queries"
-	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/service"
-	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/scanner/domain"
+	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
+	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/service"
+	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/scanner/domain"
 )
 
 // TODO: select statement for different vendors

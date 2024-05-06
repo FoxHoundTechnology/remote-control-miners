@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 
-	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
-	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/scanner/domain"
+	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
+	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/scanner/domain"
 
 	"gorm.io/gorm"
 )

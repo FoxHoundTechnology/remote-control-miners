@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	commands "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/commands"
-	queries "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/ant_miner_cgi/queries"
-	domain "github.com/FoxHoundTechnology/remote-control-miners/foxhound/internal/application/miner/domain"
+	commands "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/commands"
+	queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
+	domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
 )
 
 // TODO: add the logic for updating the pool "stats"
