@@ -20,21 +20,28 @@ import (
 
 	// TODO: db migration/seed
 	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
+	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/scanner/domain"
+
 	fleet_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/fleet"
 	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
 	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
+	fleet_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/api/routers/fleet"
+	miner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/api/routers/miner"
+	scanner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/api/routers/scanner"
+
 	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
 	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/service"
-	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/scanner/domain"
 )
 
 // TODO: select statement for different vendors
+// TODO: batch operation for miner stats update
 // TODO: R&D for pool library's memory leak
 // TODO: logic for identifying the active pool
 // TODO: logic for combined miner error supports
 
 func main() {
+
 	postgresDB := postgres.Init()
 	err := postgresDB.AutoMigrate(
 		// NOTE: The order matters
@@ -61,39 +68,17 @@ func main() {
 	DevMigrate(postgresDB, configFile)
 
 	router := gin.Default()
+
+	fleet_routes.RegisterFleetRoutes(postgresDB, router)
+	miner_routes.RegisterMinerRoutes(postgresDB, router)
+	scanner_routes.RegisterScannerRoutes(postgresDB, router)
+
 	// Util endpoint for hard-reset
-	router.GET("/reset", func(c *gin.Context) {
-		// postgresDB.Exec("DROP TABLE IF EXISTS pools;")
-		// postgresDB.Exec("DROP TABLE IF EXISTS miner_logs;")
-		// postgresDB.Exec("DROP TABLE IF EXISTS miners;")
-
-		// postgresDB.Exec("DROP TABLE IF EXISTS alerts_logs;")
-		// postgresDB.Exec("DROP TABLE IF EXISTS alerts_conditions;")
-		// postgresDB.Exec("DROP TABLE IF EXISTS alerts;")
-		// postgresDB.Exec("DROP TABLE IF EXISTS scanners;")
-
-		// postgresDB.Exec("DROP TABLE IF EXISTS fleets;")
-
-		c.String(http.StatusOK, "Reset Command: Executed")
-	})
-
-	router.GET("/test", func(ctx *gin.Context) {
-		fmt.Println("testing the preload for miner fleets")
-
-		fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
-
-		fleets, err := fleetRepo.ListMinersByFleet()
-		if err != nil {
-			fmt.Println("err in fleet repo operation: %v", err)
-		}
-
-		fmt.Println("fleets <><><><>><<<>>>>>>", fleets[0].Miners)
-
-		ctx.String(
-			http.StatusOK, "success")
-	})
-
 	router.Run()
+
+
+	// TODO: separate the worker logic from the main function
+	//---------------------------WORKER LOGIC--------------------------------
 
 	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
 	// minerRepo := miner_repo.NewMinerRepository(postgresDB)
