@@ -26,9 +26,9 @@ import (
 	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
 	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
-	fleet_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/api/routers/fleet"
-	miner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/api/routers/miner"
-	scanner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/api/routers/scanner"
+	fleet_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers/fleet"
+	miner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers/miner"
+	scanner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers/scanner"
 
 	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
 	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/service"
@@ -75,7 +75,6 @@ func main() {
 
 	// Util endpoint for hard-reset
 	router.Run()
-
 
 	// TODO: separate the worker logic from the main function
 	//---------------------------WORKER LOGIC--------------------------------
