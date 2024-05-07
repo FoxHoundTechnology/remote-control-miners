@@ -53,18 +53,29 @@ func (r *MinerRepository) ListByFleetID(ctx context.Context, miner *Miner) ([]*M
 	var miners []*Miner
 	// TODO: test preload
 	// TODO: test a different way of defining the query with struct
-	err := r.db.Find(&miners, "fleet_id = ?", miners).Error
+	err := r.db.Preload("Pools").Find(&miners, "fleet_id = ?", miners).Error
 	if err != nil {
 		return nil, err
 	}
 	return miners, err
 }
 
-func (r *MinerRepository) List() ([]*Miner, error) {
+func (r *MinerRepository) ListByMacAddresses(mac_addresses []string) ([]*Miner, error) {
 	var miners []*Miner
-	err := r.db.Find(&miners).Error
+	err := r.db.Where("mac_address IN (?)", mac_addresses).Preload("Pools").Find(&miners).Error
 	if err != nil {
 		return nil, err
 	}
+
+	return miners, err
+}
+
+func (r *MinerRepository) List() ([]*Miner, error) {
+	var miners []*Miner
+	err := r.db.Preload("Pools").Find(&miners).Error
+	if err != nil {
+		return nil, err
+	}
+
 	return miners, err
 }

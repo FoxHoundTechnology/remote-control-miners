@@ -54,7 +54,6 @@ func AntMinerCGIGetSystemInfo(username, password, ipAddress string) (*GetSystemI
 
 	resp, err := t.RoundTrip(newRequest)
 	if err != nil {
-
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 			"resp":  resp,

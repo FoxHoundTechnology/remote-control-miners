@@ -26,9 +26,7 @@ import (
 	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
 	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
-	fleet_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers/fleet"
-	miner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers/miner"
-	scanner_routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers/scanner"
+	routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers"
 
 	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
 	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/service"
@@ -69,9 +67,9 @@ func main() {
 
 	router := gin.Default()
 
-	fleet_routes.RegisterFleetRoutes(postgresDB, router)
-	miner_routes.RegisterMinerRoutes(postgresDB, router)
-	scanner_routes.RegisterScannerRoutes(postgresDB, router)
+	routes.RegisterFleetRoutes(postgresDB, router)
+	routes.RegisterMinerRoutes(postgresDB, router)
+	routes.RegisterScannerRoutes(postgresDB, router)
 
 	// Util endpoint for hard-reset
 	router.Run()
@@ -274,15 +272,14 @@ func main() {
 						switch alertCondition.ConditionType {
 
 						case scanner_domain.Hashrate:
-
 							if antMinerCGIService.Stats.HashRate >= float64(alertCondition.TriggerValue) {
+								//
 								// increment the counter and update the status of miner
 								conditionCounter[scanner_domain.Hashrate]++
 								antMinerCGIService.Status = miner_domain.HashrateError
 							}
 
 						case scanner_domain.Temperature:
-
 							maxTemperature := 0
 							for _, temperatureSensor := range antMinerCGIService.Temperature {
 								for _, pcbSensor := range temperatureSensor.PcbSensors {
@@ -298,7 +295,6 @@ func main() {
 							}
 
 						case scanner_domain.FanSpeed:
-
 							maxFanSpeed := 0
 							for _, fanSensor := range antMinerCGIService.Fan {
 								if fanSensor.Speed >= maxFanSpeed {

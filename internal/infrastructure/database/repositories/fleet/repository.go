@@ -59,12 +59,12 @@ func (r *FleetRepository) ListScannersByFleet() ([]Fleet, error) {
 }
 
 // Fleet -> Miners
-func (r *FleetRepository) ListMinersByFleet() ([]Fleet, error) {
-	var fleets []Fleet
+func (r *FleetRepository) ListMinersByFleet() ([]*Fleet, error) {
+	var fleets []*Fleet
 	err := r.db.Model(&Fleet{}).
 		Preload("Miners").
 		Preload("Miners.Pools").
-		Preload("Miners.MinerLog").
+		Preload("Miners.MinerLogs").
 		Find(&fleets).Error
 	if err != nil {
 		return nil, err

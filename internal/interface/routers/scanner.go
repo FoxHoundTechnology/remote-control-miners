@@ -3,16 +3,16 @@ package routers
 import (
 	"net/http"
 
-	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+
+	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 )
 
+// TODO: separate the response logic into controller layer
 func RegisterScannerRoutes(db *gorm.DB, router *gin.Engine) {
 
 	router.GET("/scanners/list", func(ctx *gin.Context) {
-
 		scanners := []scanner_repo.Scanner{}
 		db.Find(&scanners)
 
@@ -21,4 +21,5 @@ func RegisterScannerRoutes(db *gorm.DB, router *gin.Engine) {
 			"data":    scanners,
 		})
 	})
+
 }
