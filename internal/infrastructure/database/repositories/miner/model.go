@@ -12,6 +12,7 @@ import (
 )
 
 // TODO: cascade for log
+// TODO: vendor model name
 
 type Fan []int
 type Temperature []int

@@ -247,6 +247,8 @@ func (a *AntminerCGI) ChangePool(pools []domain.Pool) error {
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
 
+	a.Pools = pools
+
 	return nil
 }
 
