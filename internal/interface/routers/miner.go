@@ -34,13 +34,13 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 		miners, err := minerRepository.List()
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"message": "error",
+				"message": "error fetching miners",
 				"data":    err,
 			})
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"message": "fleet list test",
+			"message": "successfully fetched miners",
 			"data":    miners,
 		})
 	})
@@ -57,7 +57,7 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 		miners, err := minerRepository.ListByMacAddresses(minerControlRequest.MacAddresses)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"message": "error",
+				"message": "error sending config requests to miners",
 				"data":    err,
 			})
 		}

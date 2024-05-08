@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/alitto/pond"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	postgres "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/postgres"
@@ -66,6 +67,12 @@ func main() {
 	DevMigrate(postgresDB, configFile)
 
 	router := gin.Default()
+	config := cors.DefaultConfig()
+	// TODO: once the frontend gets deployed, change the origin to the actual frontend's origin
+	config.AllowOrigins = []string{"*"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	router.Use(cors.New(config))
 
 	routes.RegisterFleetRoutes(postgresDB, router)
 	routes.RegisterMinerRoutes(postgresDB, router)
