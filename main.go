@@ -36,6 +36,7 @@ import (
 // TODO: select statement for different vendors
 // TODO: batch operation for miner stats update
 // TODO: R&D for pool library's memory leak
+// TODO: logic for detecting offline miners
 // TODO: logic for identifying the active pool
 // TODO: logic for combined miner error supports
 
@@ -77,9 +78,14 @@ func main() {
 	routes.RegisterFleetRoutes(postgresDB, router)
 	routes.RegisterMinerRoutes(postgresDB, router)
 	routes.RegisterScannerRoutes(postgresDB, router)
+	routes.RegisterMinerTimeSeriesRoutes(router)
 
-	// Util endpoint for hard-reset
-	router.Run()
+	// Start the router on a separate goroutine
+	go func() {
+		if err := router.Run(); err != nil {
+			log.Printf("Failed to start router: %v", err)
+		}
+	}()
 
 	// TODO: separate the worker logic from the main function
 	//---------------------------WORKER LOGIC--------------------------------
@@ -107,11 +113,6 @@ func main() {
 
 	for range ticker.C {
 		fmt.Println("Running scheduled tasks...")
-		pool.Submit(func() {
-			// Your recurring task logic here
-			fmt.Println("Performing task...")
-			// Example: you can simulate a task with a sleep
-		})
 
 		fleets, err := fleetRepo.ListScannersByFleet()
 		if err != nil {
@@ -186,7 +187,7 @@ func main() {
 							return
 						}
 
-						fmt.Println("rawGetSystemInfoResponse: ", rawGetSystemInfoResponse)
+						fmt.Println("rawGetSystemInfoResponse: ", rawGetSystemInfoResponse.MinerType)
 
 						antMinerCGI := ant_miner_cgi_service.NewAntminerCGI(
 							miner_domain.Config{
@@ -198,7 +199,10 @@ func main() {
 								IPAddress:  rawGetSystemInfoResponse.IPAddress,
 								MacAddress: rawGetSystemInfoResponse.MACAddress,
 							},
+							rawGetSystemInfoResponse.MinerType,
 						)
+
+						fmt.Println("MODEL NAME =====>>>>>", rawGetSystemInfoResponse.MinerType)
 						// feed the ARPResponses channel with the antMinerCGI object
 						ARPResponses <- antMinerCGI
 					}(i, ip)
@@ -417,6 +421,8 @@ func main() {
 							Firmware: antMinerCGIService.Config.Firmware,
 						}
 
+						miner.ModelName = antMinerCGIService.Model
+						fmt.Println("MODEL NAME in tb operaiotn =====>>>>>", antMinerCGIService.Model)
 						miner.Mode = miner_domain.NormalMode
 
 						miner.Status = miner_domain.Online
@@ -476,6 +482,9 @@ func main() {
 						existingMiner.Config.Password = antMinerCGIService.Config.Password
 						existingMiner.Config.Firmware = antMinerCGIService.Config.Firmware
 						existingMiner.Mode = antMinerCGIService.Mode
+						fmt.Println("MODEL NAME in tb operaiotn =====>>>>>", antMinerCGIService.Model)
+						existingMiner.ModelName = antMinerCGIService.Model
+
 						existingMiner.Status = antMinerCGIService.Status
 						existingMiner.FleetID = fleet.ID
 
