@@ -14,7 +14,6 @@ type InfluxDBConnectionSettings struct {
 	Client influxDB.Client
 	Org    string
 	Bucket string
-	// writer influxDB_api.WriteAPI
 }
 
 // TODO: automate instantiation with init
@@ -27,13 +26,11 @@ func Init() InfluxDBConnectionSettings {
 
 	client := influxDB.NewClientWithOptions(url, token,
 		influxDB.DefaultOptions().SetBatchSize(1000))
-	// writer := client.WriteAPI(org, bucket)
 
 	return InfluxDBConnectionSettings{
 		Client: client,
 		Org:    org,
 		Bucket: bucket,
-		// writer: writer,
 	}
 }
 

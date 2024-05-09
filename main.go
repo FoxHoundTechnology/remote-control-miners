@@ -27,6 +27,8 @@ import (
 	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
 	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
+	timeseries_database "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/influxdb"
+
 	routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers"
 
 	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
@@ -93,6 +95,9 @@ func main() {
 	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
 	// minerRepo := miner_repo.NewMinerRepository(postgresDB)
 	// scannerRepo := scanner_repo.NewScannerRepository(postgresDB)
+
+	InfluxDBConnectionSettings := timeseries_database.Init()
+	minerTimeSeriesRepository := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
 
 	panicHandler := func(p interface{}) {
 		log.Println("worker paniced %v", p)
@@ -460,6 +465,9 @@ func main() {
 							workerErrors <- err
 						}
 
+						// TODO: write time series data
+						
+
 						// result.RowsAffected != 0
 						// a relevant miner already exists
 					} else {
@@ -482,7 +490,6 @@ func main() {
 						existingMiner.Config.Password = antMinerCGIService.Config.Password
 						existingMiner.Config.Firmware = antMinerCGIService.Config.Firmware
 						existingMiner.Mode = antMinerCGIService.Mode
-						fmt.Println("MODEL NAME in tb operaiotn =====>>>>>", antMinerCGIService.Model)
 						existingMiner.ModelName = antMinerCGIService.Model
 
 						existingMiner.Status = antMinerCGIService.Status
@@ -503,6 +510,9 @@ func main() {
 						if err := postgresDB.Where("ID = ?", existingMiner.ID).Updates(existingMiner).Error; err != nil {
 							fmt.Println("error in seesssion ", err)
 						}
+
+						// TODO: write time series data
+
 					}
 				}
 				fmt.Println("========================END OF WORKER=========================")
