@@ -21,7 +21,7 @@ type RawGetSystemInfoResponse struct {
 	Hostname                string `json:"hostname"`
 	IPAddress               string `json:"ipaddress"`
 	MACAddress              string `json:"macaddr"`
-	MinerType               string `json:"minertype"`
+	MinerType               string `json:"minertype"` // NOTE: miner model name (e.g. S19)
 	NetDevice               string `json:"netdevice"`
 	NetMask                 string `json:"netmask"`
 	NetType                 string `json:"nettype"`
@@ -35,7 +35,7 @@ type GetSystemInfoResponse struct {
 	FirmwareType string `json:"firmware_type"`
 	IPAddress    string `json:"ip_address"`
 	MacAddress   string `json:"mac_address"`
-	MinerType    string `json:"miner_type"` // used to determine which vendor the miner is from
+	MinerType    string `json:"miner_type"` // NOTE: miner model name (e.g. S19)
 }
 
 func AntMinerCGIGetSystemInfo(username, password, ipAddress string) (*GetSystemInfoResponse, error) {

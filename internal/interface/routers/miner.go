@@ -79,6 +79,7 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 						IPAddress:  miner.Miner.IPAddress,
 						MacAddress: miner.Miner.MacAddress,
 					},
+					miner.ModelName,
 				)
 				antMinerCGIServiceArray = append(antMinerCGIServiceArray, *antMinerCGIService)
 

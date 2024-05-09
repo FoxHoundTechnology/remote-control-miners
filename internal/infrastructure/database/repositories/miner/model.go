@@ -19,10 +19,12 @@ type Temperature []int
 
 type Miner struct {
 	gorm.Model
-	Miner     miner_domain.Miner  `gorm:"embedded"`
-	Stats     miner_domain.Stats  `gorm:"embedded"`
-	Config    miner_domain.Config `gorm:"embedded"`
+	Miner  miner_domain.Miner  `gorm:"embedded"`
+	Stats  miner_domain.Stats  `gorm:"embedded"`
+	Config miner_domain.Config `gorm:"embedded"`
+
 	MinerType scanner_domain.MinerType
+	ModelName string `gorm:"comment: i.e. Antminer s19"`
 
 	Mode   miner_domain.Mode   `gorm:"comment: Mode: 0=Normal, 1=Sleep, 2=LowPower"`
 	Status miner_domain.Status `gorm:"comment: Status: 0=Online, 1=Offline, 2=Disabled, 3=Error, 4=Warning"`

@@ -27,10 +27,11 @@ type AntminerCGI struct {
 	FanCtrl     bool   // fan control enabled/disabled
 	FanPwm      string // fan pwm value
 	FreqLevel   string // frequency level
+	Model       string // miner model name (e.g. S19, S17)
 	rwMutex     *sync.RWMutex
 }
 
-func NewAntminerCGI(config domain.Config, miner domain.Miner) *AntminerCGI {
+func NewAntminerCGI(config domain.Config, miner domain.Miner, modelName string) *AntminerCGI {
 	return &AntminerCGI{
 		Miner:  miner,
 		Mode:   domain.SleepMode,
@@ -47,6 +48,7 @@ func NewAntminerCGI(config domain.Config, miner domain.Miner) *AntminerCGI {
 		FanCtrl:     true,
 		FanPwm:      "100",
 		FreqLevel:   "",
+		Model: 	 modelName,
 		rwMutex:     new(sync.RWMutex),
 	}
 }
@@ -214,6 +216,7 @@ func (a *AntminerCGI) CheckSystemInfo() error {
 	a.Config.Firmware = GetSystemInfoResponse.FirmwareType
 	a.Miner.IPAddress = GetSystemInfoResponse.IPAddress
 	a.Miner.MacAddress = GetSystemInfoResponse.MacAddress
+	a.Model = GetSystemInfoResponse.MinerType // NOTE: miner model name
 
 	return nil
 }
