@@ -30,7 +30,7 @@ type DigestTransport struct {
 	HTTPClient *http.Client
 }
 
-const TIMEOUT = 100 * time.Second
+const TIMEOUT = 30 * time.Second
 
 // NewRequest creates a new DigestRequest object
 func NewRequest(username, password, method, uri, body string) DigestRequest {
