@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,19 +21,16 @@ type PostgresConnectionSettings struct {
 	Database string
 }
 
-var settings = PostgresConnectionSettings{
-	Host:     "postgres_db", // Placeholder values
-	Port:     "5432",        // Placeholder values
-	User:     "user",        // Placeholder values
-	Password: "1234",        // Placeholder values
-	Database: "postgres",    // Placeholder values
-}
-
-// TODO: automate the db instantiation with init
 func Init() *gorm.DB {
 
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	db_name := os.Getenv("DB_NAME")
+
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
-		settings.Host, settings.User, settings.Password, settings.Database, settings.Port)
+		host, user, password, db_name, port)
 
 	postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
