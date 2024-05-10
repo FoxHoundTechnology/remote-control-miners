@@ -8,7 +8,6 @@ import (
 
 // TODO; batch size based on # of host cores
 // TODO: Handle fatal errors
-// TODO: env
 
 type InfluxDBConnectionSettings struct {
 	Client influxDB.Client
@@ -19,13 +18,15 @@ type InfluxDBConnectionSettings struct {
 // TODO: automate instantiation with init
 func Init() InfluxDBConnectionSettings {
 
-	org := os.Getenv("INFLUX_DB_ORG_NAME")
-	bucket := os.Getenv("INFLUX_DB_BUCKET_NAME")
-	url := "http://influxdb:8086" // = container name
+	org := os.Getenv("INFLUX_DB_ORG")
+	bucket := os.Getenv("INFLUX_DB_BUCKET")
+	url := os.Getenv("INFLUX_DB_URL")
+	port := os.Getenv("INFLUX_DB_PORT")
+	path := url + ":" + port
 	token := os.Getenv("INFLUX_DB_TOKEN")
 
-	client := influxDB.NewClientWithOptions(url, token,
-		influxDB.DefaultOptions().SetBatchSize(1000))
+	client := influxDB.NewClientWithOptions(path, token,
+		influxDB.DefaultOptions().SetBatchSize(10000))
 
 	return InfluxDBConnectionSettings{
 		Client: client,

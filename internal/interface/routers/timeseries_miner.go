@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	// NOTE: it includes the time series repository as well
-	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
 	timeseries_database "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/influxdb"
+	miner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/miner"
 
 	"github.com/gin-gonic/gin"
 )

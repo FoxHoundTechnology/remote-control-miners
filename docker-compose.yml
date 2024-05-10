@@ -12,47 +12,56 @@ services:
     env_file:
       - .env
     environment:
-      - DB_HOST=postgres_db
-      - DB_PORT=5432
-      - DB_USER=user
-      - DB_PASSWORD=1234
-      - DB_NAME=postgres
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
     ports:
       - 8080:8080
     depends_on:
-      - postgres_db
-      # - timescale_db
+      - influxdb
+      - postgres
 
-  postgres_db:
-    container_name: postgres_db
+  postgres:
+    container_name: postgres
     image: postgres:13
     restart: always
     env_file:
       - .env
     environment:
-      - POSTGRES_PASSWORD=1234
-      - POSTGRES_USER=user
-      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
       - 5432:5432
 
-  # timescale_db:
-  #   container_name: timescale_db
-  #   image: timescale/timescaledb:latest-pg13
-  #   restart: always
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - POSTGRES_PASSWORD=1234
-  #     - POSTGRES_USER=user
-  #     - POSTGRES_DB=timescale
-  #   volumes:
-  #     - timescale_data:/var/lib/postgresql/data/
-  #   ports:
-  #     - 5434:5434
+  influxdb:
+    container_name: influxdb
+    image: influxdb:latest
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - INFLUX_DB=${INFLUX_DB_NAME}
+      - INFLUX_DB_USER=${INFLUX_DB_USER}
+      - INFLUX_DB_USER_PASSWORD=${INFLUX_DB_USER_PASSWORD}
+      - INFLUX_DB_ADMIN_USER=${INFLUX_DB_ADMIN}
+      - INFLUX_DB_ADMIN_USER_PASSWORD=${INFLUX_DB_ADMIN_PASSWORD}
+      - INFLUX_DB_ORG=${INFLUX_DB_ORG}
+      - INFLUX_DB_BUCKET=${INFLUX_DB_BUCKET}
+      - INFLUX_DB_TOKEN=${INFLUX_DB_TOKEN}
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+      - ./init-influxdb.sh:/init-influxdb.sh
+    # TODO: automate the bucket creation and token generation
+    # entrypoint: ['/bin/bash', '-c']
+    # command: ['./init-influxdb.sh && exec influxd']
+    ports:
+      - 8086:8086
 
 volumes:
   postgres_data:
-  # timescale_data:
+  influxdb_data:

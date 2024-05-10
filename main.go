@@ -35,6 +35,7 @@ import (
 	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/service"
 )
 
+// TODO: retrieve a collection of max temperature and max fan speed
 // TODO: select statement for different vendors
 // TODO: batch operation for miner stats update
 // TODO: R&D for pool library's memory leak
@@ -45,6 +46,8 @@ import (
 func main() {
 
 	postgresDB := postgres.Init()
+	InfluxDBConnectionSettings := timeseries_database.Init()
+
 	err := postgresDB.AutoMigrate(
 		// NOTE: The order matters
 		&fleet_repo.Fleet{},
@@ -71,7 +74,6 @@ func main() {
 
 	router := gin.Default()
 	config := cors.DefaultConfig()
-	// TODO: once the frontend gets deployed, change the origin to the actual frontend's origin
 	config.AllowOrigins = []string{"*"}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
@@ -95,8 +97,6 @@ func main() {
 	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
 	// minerRepo := miner_repo.NewMinerRepository(postgresDB)
 	// scannerRepo := scanner_repo.NewScannerRepository(postgresDB)
-
-	InfluxDBConnectionSettings := timeseries_database.Init()
 	minerTimeSeriesRepository := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
 
 	panicHandler := func(p interface{}) {
@@ -427,7 +427,6 @@ func main() {
 						}
 
 						miner.ModelName = antMinerCGIService.Model
-						fmt.Println("MODEL NAME in tb operaiotn =====>>>>>", antMinerCGIService.Model)
 						miner.Mode = miner_domain.NormalMode
 
 						miner.Status = miner_domain.Online
@@ -451,6 +450,7 @@ func main() {
 							miner.Pools = append(miner.Pools, newPool)
 						}
 
+						// TODO: retrieve max temp and max fan speed
 						for _, temperatureSensor := range antMinerCGIService.Temperature {
 							miner.Temperature = append(miner.Temperature, temperatureSensor.PcbSensors...)
 						}
@@ -465,11 +465,33 @@ func main() {
 							workerErrors <- err
 						}
 
-						// TODO: write time series data
-						
+						minerTimeSeriesRepository.WriteMinerData(miner.Miner.MacAddress, miner_repo.MinerTimeSeries{
+							MacAddress: antMinerCGIService.Miner.MacAddress,
+							HashRate:   int(antMinerCGIService.Stats.HashRate),
+							TempSensor: miner.Temperature,
+							FanSensor:  miner.Fan,
+						})
+
+						if antMinerCGIService.Pools != nil {
+							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
+								MacAddress: antMinerCGIService.Miner.MacAddress,
+								Accepted:   antMinerCGIService.Pools[0].Accepted,
+								Rejected:   antMinerCGIService.Pools[0].Rejected,
+								Stale:      antMinerCGIService.Pools[0].Stale,
+							})
+
+						} else {
+							fmt.Println("No pool data available")
+							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
+								MacAddress: antMinerCGIService.Miner.MacAddress,
+								Accepted:   0,
+								Rejected:   0,
+								Stale:      0,
+							})
+						}
 
 						// result.RowsAffected != 0
-						// a relevant miner already exists
+						// = a relevant miner already exists
 					} else {
 
 						var existingMiner miner_repo.Miner
@@ -507,14 +529,53 @@ func main() {
 							postgresDB.Where("miner_id = ?", existingMiner.ID).Save(existingMiner.Pools[index])
 						}
 
+						for _, temperatureSensor := range antMinerCGIService.Temperature {
+							// TODO: max search
+							existingMiner.Temperature = append(miner.Temperature, temperatureSensor.PcbSensors...)
+						}
+
+						for _, fanSensor := range antMinerCGIService.Fan {
+							// TODO: max search
+							existingMiner.Fan = append(miner.Fan, fanSensor.Speed)
+						}
+
 						if err := postgresDB.Where("ID = ?", existingMiner.ID).Updates(existingMiner).Error; err != nil {
 							fmt.Println("error in seesssion ", err)
 						}
 
-						// TODO: write time series data
+						// update the timeseries data for the existing miner
+						minerTimeSeriesRepository.WriteMinerData(existingMiner.Miner.MacAddress, miner_repo.MinerTimeSeries{
+							MacAddress: antMinerCGIService.Miner.MacAddress,
+							HashRate:   int(antMinerCGIService.Stats.HashRate),
+							TempSensor: existingMiner.Temperature, // reuse the existing temperature data
+							FanSensor:  existingMiner.Fan,         // reuse the existing fan data
+						})
 
+						if antMinerCGIService.Pools != nil {
+
+							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
+								MacAddress: antMinerCGIService.Miner.MacAddress,
+								Accepted:   antMinerCGIService.Pools[0].Accepted,
+								Rejected:   antMinerCGIService.Pools[0].Rejected,
+								Stale:      antMinerCGIService.Pools[0].Stale,
+							})
+
+						} else {
+
+							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
+								MacAddress: antMinerCGIService.Miner.MacAddress,
+								Accepted:   0,
+								Rejected:   0,
+								Stale:      0,
+							})
+
+						}
 					}
 				}
+				// Flush the timeseries data to the database
+				minerTimeSeriesRepository.FlushMinerData()
+				minerTimeSeriesRepository.FlushPoolData()
+
 				fmt.Println("========================END OF WORKER=========================")
 			})
 		}

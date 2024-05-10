@@ -14,6 +14,7 @@ import (
 	timeseries_database "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/influxdb"
 )
 
+// TODO: context cancellation
 // TODO: data race condition
 // TODO: RW mutex
 
@@ -35,7 +36,6 @@ func NewMinerTimeSeriesRepository(db timeseries_database.InfluxDBConnectionSetti
 func (r *MinerTimeSeriesRepository) WriteMinerData(mac_address string, data MinerTimeSeries) error {
 
 	r.timeseriesMinerData = append(r.timeseriesMinerData, data)
-
 
 	return nil
 }

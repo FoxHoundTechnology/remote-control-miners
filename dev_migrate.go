@@ -6,9 +6,8 @@ import (
 	"log"
 	"os"
 
-	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
-
 	fleet_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/fleet"
+	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
 	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/scanner/domain"
 

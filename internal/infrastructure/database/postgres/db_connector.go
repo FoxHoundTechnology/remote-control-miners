@@ -11,7 +11,6 @@ import (
 
 // TODO: Logger
 // TODO: Handle fatal errors
-// TODO: env
 
 type PostgresConnectionSettings struct {
 	Host     string

@@ -35,4 +35,4 @@ EXPOSE 8080
 
 # Set the command that will be executed when the container starts
 # CMD ["./main"]
-ENTRYPOINT CompileDaemon -build="go build -o remote_control_server" -command="./remote_control_server"
+ENTRYPOINT CompileDaemon -build="go build -o remote-control-server" -command="./remote-control-server"
