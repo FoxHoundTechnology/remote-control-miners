@@ -19,7 +19,7 @@ import (
 
 type MinerTimeSeriesRequest struct {
 	MacAddress string `json:"mac_address"`
-	Interval   int    `json:"interval"` // hour
+	Interval   int    `json:"interval"` // minute
 }
 
 func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {

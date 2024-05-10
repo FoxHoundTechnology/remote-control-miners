@@ -31,8 +31,6 @@ type MinerTimeSeriesRepository struct {
 
 func NewMinerTimeSeriesRepository(db timeseries_database.InfluxDBConnectionSettings) *MinerTimeSeriesRepository {
 
-	fmt.Println("INITIALIZING TIMESERIES REPOSITORY", db)
-
 	return &MinerTimeSeriesRepository{
 		db: db,
 
@@ -182,7 +180,6 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 
 			temperatureStringArray := strings.Split(sensorData, ",")
 			temperatureSlice := make([]int, len(temperatureStringArray))
-
 
 			for index, temperatureString := range temperatureStringArray {
 				temperatureValue, err := strconv.Atoi(temperatureString)
