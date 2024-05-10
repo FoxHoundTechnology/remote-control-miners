@@ -31,6 +31,7 @@ type Config struct {
 		Alert struct {
 			Name       string `json:"name"`
 			Action     int    `json:"action"`
+			Active     bool   `json:"active"`
 			Conditions []struct {
 				TriggerValue  float64 `json:"trigger_value"`
 				MachineCount  int     `json:"machine_count"`
@@ -98,6 +99,7 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 			Name:      fleet.Name,
 			Action:    scanner_domain.AlertActionType(fleetConfig.Alert.Action),
 			State:     scanner_domain.Monitoring,
+			Active:    fleetConfig.Alert.Active,
 			ScannerID: scanner.ID,
 		}
 

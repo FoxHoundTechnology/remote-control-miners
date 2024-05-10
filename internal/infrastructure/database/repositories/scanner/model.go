@@ -28,6 +28,7 @@ type Alert struct {
 	Name   string                 `gorm:"unique"`
 	Action domain.AlertActionType `gorm:"comment:'Reboot=0, Sleep=1, Normal=2'"`
 	State  domain.AlertState      `gorm:"comment:'Monitoring=0, Triggered=1, Resolving=2, Resolved=3'"`
+	Active bool                   `gorm:"default:true"`
 
 	Condition []AlertCondition `gorm:"foreignKey:AlertID;references:ID"`
 	Log       []AlertLog       `gorm:"foreignKey:AlertID;references:ID"`

@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	influxDB "github.com/influxdata/influxdb-client-go/v2"
@@ -21,19 +22,32 @@ import (
 type MinerTimeSeriesRepository struct {
 	db     timeseries_database.InfluxDBConnectionSettings
 	writer influxDB_api.WriteAPI
-	client influxDB.Client
+
+	rw *sync.RWMutex
 
 	timeseriesMinerData []MinerTimeSeries
 	timeseriesPoolData  []PoolTimeSeries
 }
 
 func NewMinerTimeSeriesRepository(db timeseries_database.InfluxDBConnectionSettings) *MinerTimeSeriesRepository {
+
+	fmt.Println("INITIALIZING TIMESERIES REPOSITORY", db)
+
 	return &MinerTimeSeriesRepository{
 		db: db,
+
+		writer: db.Client.WriteAPI(db.Org, db.Bucket),
+		rw:     new(sync.RWMutex),
+
+		timeseriesMinerData: []MinerTimeSeries{},
+		timeseriesPoolData:  []PoolTimeSeries{},
 	}
 }
 
 func (r *MinerTimeSeriesRepository) WriteMinerData(mac_address string, data MinerTimeSeries) error {
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
 
 	r.timeseriesMinerData = append(r.timeseriesMinerData, data)
 
@@ -42,16 +56,18 @@ func (r *MinerTimeSeriesRepository) WriteMinerData(mac_address string, data Mine
 
 func (r *MinerTimeSeriesRepository) FlushMinerData() error {
 
-	for index, data := range r.timeseriesMinerData {
+	fmt.Println("flushing miner data with length", len(r.timeseriesMinerData))
 
-		temperatureStringArray := make([]string, len(r.timeseriesMinerData[index].TempSensor))
+	for _, data := range r.timeseriesMinerData {
+
+		temperatureStringArray := make([]string, len(data.TempSensor))
 		for index, temperature := range data.TempSensor {
 			temperatureStringArray[index] = fmt.Sprintf("%d", temperature)
 		}
 
-		fanStringArray := make([]string, len(r.timeseriesMinerData[index].FanSensor))
+		fanStringArray := make([]string, len(data.FanSensor))
 		for index, fan_speed := range data.FanSensor {
-			temperatureStringArray[index] = fmt.Sprintf("%d", fan_speed)
+			fanStringArray[index] = fmt.Sprintf("%d", fan_speed)
 		}
 
 		fields := map[string]interface{}{
@@ -61,7 +77,7 @@ func (r *MinerTimeSeriesRepository) FlushMinerData() error {
 		}
 
 		tag := map[string]string{
-			"macaddress": data.MacAddress,
+			"mac_address": data.MacAddress,
 		}
 
 		point := influxDB.NewPoint(
@@ -85,6 +101,7 @@ func (r *MinerTimeSeriesRepository) WritePoolData(mac_address string, data PoolT
 }
 
 func (r *MinerTimeSeriesRepository) FlushPoolData() error {
+
 	for _, data := range r.timeseriesPoolData {
 
 		fields := map[string]interface{}{
@@ -94,7 +111,7 @@ func (r *MinerTimeSeriesRepository) FlushPoolData() error {
 		}
 
 		tag := map[string]string{
-			"macaddress": data.MacAddress,
+			"ma_caddress": data.MacAddress,
 		}
 
 		point := influxDB.NewPoint(
@@ -112,7 +129,7 @@ func (r *MinerTimeSeriesRepository) FlushPoolData() error {
 }
 
 func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval int) (MinerTimeSeriesResponse, error) {
-	queryAPI := r.client.QueryAPI(r.db.Org)
+	queryAPI := r.db.Client.QueryAPI(r.db.Org)
 	query := fmt.Sprintf(`from(bucket: "%s")
 	|> range(start: -%dh)
 	|> filter(fn: (r) => r._measurement == "miner_data" and r.mac_address == "%s")
@@ -204,7 +221,7 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 }
 
 func (r *MinerTimeSeriesRepository) ReadPoolData(mac_address string, interval int) (PoolTimeSeriesResponse, error) {
-	queryAPI := r.client.QueryAPI(r.db.Org)
+	queryAPI := r.db.Client.QueryAPI(r.db.Org)
 
 	// Modify the range to use the interval for days.
 	query := fmt.Sprintf(`from(bucket: "%s")
