@@ -137,10 +137,8 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 	query := fmt.Sprintf(`from(bucket: "%s")
 	|> range(start: -%dm)
 	|> filter(fn: (r) => r._measurement == "miner_data" and r.mac_address == "%s")
-	|> sort(columns: ["_time"], desc: false)
-	`, r.db.Bucket, interval, mac_address) // TODO: window interval
-
-	fmt.Println("<<<QUERY>>>", query)
+	|> sort(columns: ["_time"], desc: false)`,
+		r.db.Bucket, interval, mac_address)
 
 	results, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -185,7 +183,6 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 			temperatureStringArray := strings.Split(sensorData, ",")
 			temperatureSlice := make([]int, len(temperatureStringArray))
 
-			fmt.Println("TEMPERATURE STRING ARRAY", temperatureStringArray)
 
 			for index, temperatureString := range temperatureStringArray {
 				temperatureValue, err := strconv.Atoi(temperatureString)
@@ -243,9 +240,10 @@ func (r *MinerTimeSeriesRepository) ReadPoolData(mac_address string, interval in
 
 	// Modify the range to use the interval for days.
 	query := fmt.Sprintf(`from(bucket: "%s")
-		|> range(start: -%dh) // NOTE: pool_stats -> pool_data
-		|> filter(fn: (r) => r._measurement == "pool_stats" and r.mac_address == "%s")
-		|> sort(columns: ["_time"], desc: false)`, r.db.Bucket, interval, mac_address)
+		|> range(start: -%dm) 
+		|> filter(fn: (r) => r._measurement == "pool_data" and r.mac_address == "%s")
+		|> sort(columns: ["_time"], desc: false)`,
+		r.db.Bucket, interval, mac_address)
 
 	results, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -275,6 +273,8 @@ func (r *MinerTimeSeriesRepository) ReadPoolData(mac_address string, interval in
 			fmt.Println("unknown type")
 		}
 
+		fmt.Println("THIS IS THE VALUE INSERING INTO THE POOL DATA MAP ARRAY", value)
+
 		poolData := poolDataMapArray[t]
 		switch fieldName {
 		case "accepted":
@@ -297,6 +297,7 @@ func (r *MinerTimeSeriesRepository) ReadPoolData(mac_address string, interval in
 	})
 
 	var poolTimeSeriesArray []PoolTimeSeries
+
 	for _, timestamp := range timeStamps {
 		poolTimeSeriesArray = append(poolTimeSeriesArray, *poolDataMapArray[timestamp])
 	}

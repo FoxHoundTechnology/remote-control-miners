@@ -33,6 +33,7 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
 			return
 		}
+
 		res, err := minerTimeSeriesRepository.ReadMinerData(request.MacAddress, request.Interval)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -54,6 +55,7 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
 			return
 		}
+
 		res, err := minerTimeSeriesRepository.ReadPoolData(requests.MacAddress, requests.Interval)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
@@ -69,5 +71,4 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 		})
 
 	})
-
 }
