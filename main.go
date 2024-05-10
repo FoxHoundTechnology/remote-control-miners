@@ -574,35 +574,34 @@ func main() {
 
 						fmt.Println("AFTER WRITING IN TIMESERIES", existingMiner)
 
-						// fmt.Println("CALLING TIME FOR POOL OPERATION=========================>>>>>>>>>>>>>>>>>>>>>>>>>>", existingMiner.Pools)
-
 						// fmt.Println("pool index?? ", antMinerCGIService.Pools)
-						// if antMinerCGIService.Pools != nil {
+						if antMinerCGIService.Pools != nil {
 
-						// 	minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
-						// 		MacAddress: antMinerCGIService.Miner.MacAddress,
-						// 		Accepted:   antMinerCGIService.Pools[0].Accepted,
-						// 		Rejected:   antMinerCGIService.Pools[0].Rejected,
-						// 		Stale:      antMinerCGIService.Pools[0].Stale,
-						// 	})
+							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
+								MacAddress: antMinerCGIService.Miner.MacAddress,
+								Accepted:   antMinerCGIService.Pools[0].Accepted,
+								Rejected:   antMinerCGIService.Pools[0].Rejected,
+								Stale:      antMinerCGIService.Pools[0].Stale,
+							})
 
-						// } else {
+						} else {
 
-						// 	minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
-						// 		MacAddress: antMinerCGIService.Miner.MacAddress,
-						// 		Accepted:   0,
-						// 		Rejected:   0,
-						// 		Stale:      0,
-						// 	})
+							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
+								MacAddress: antMinerCGIService.Miner.MacAddress,
+								Accepted:   0,
+								Rejected:   0,
+								Stale:      0,
+							})
 
+						}
 					}
+
+					// Flush the timeseries data to the database
+					minerTimeSeriesRepository.FlushMinerData()
+					minerTimeSeriesRepository.FlushPoolData()
+
+					fmt.Println("========================END OF WORKER=========================")
 				}
-
-				// Flush the timeseries data to the database
-				minerTimeSeriesRepository.FlushMinerData()
-				// minerTimeSeriesRepository.FlushPoolData()
-
-				fmt.Println("========================END OF WORKER=========================")
 			})
 		}
 	}

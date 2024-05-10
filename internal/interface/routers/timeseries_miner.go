@@ -18,8 +18,8 @@ import (
 // TODO: separate the response logic into controller layer
 
 type MinerTimeSeriesRequest struct {
-	MacAddress string `json:"mac_addresses"`
-	Interval   int    `json:"interval"`
+	MacAddress string `json:"mac_address"`
+	Interval   int    `json:"interval"` // hour
 }
 
 func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {

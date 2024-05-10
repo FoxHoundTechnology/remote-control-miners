@@ -96,6 +96,9 @@ func (r *MinerTimeSeriesRepository) FlushMinerData() error {
 }
 
 func (r *MinerTimeSeriesRepository) WritePoolData(mac_address string, data PoolTimeSeries) error {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
 	r.timeseriesPoolData = append(r.timeseriesPoolData, data)
 	return nil
 }
@@ -111,7 +114,7 @@ func (r *MinerTimeSeriesRepository) FlushPoolData() error {
 		}
 
 		tag := map[string]string{
-			"ma_caddress": data.MacAddress,
+			"mac_address": data.MacAddress,
 		}
 
 		point := influxDB.NewPoint(
@@ -128,12 +131,16 @@ func (r *MinerTimeSeriesRepository) FlushPoolData() error {
 	return nil
 }
 
+// NOTE: mac_address is null in the response object
 func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval int) (MinerTimeSeriesResponse, error) {
 	queryAPI := r.db.Client.QueryAPI(r.db.Org)
 	query := fmt.Sprintf(`from(bucket: "%s")
-	|> range(start: -%dh)
+	|> range(start: -%dm)
 	|> filter(fn: (r) => r._measurement == "miner_data" and r.mac_address == "%s")
-	|> sort(columns: ["_time"], desc: false)`, r.db.Bucket, interval, mac_address)
+	|> sort(columns: ["_time"], desc: false)
+	`, r.db.Bucket, interval, mac_address) // TODO: window interval
+
+	fmt.Println("<<<QUERY>>>", query)
 
 	results, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -172,8 +179,13 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 		case "hashrate":
 			minerData.HashRate = hashrate
 		case "temp_sensors":
+
+			// perhaps updateing the array here?
+
 			temperatureStringArray := strings.Split(sensorData, ",")
 			temperatureSlice := make([]int, len(temperatureStringArray))
+
+			fmt.Println("TEMPERATURE STRING ARRAY", temperatureStringArray)
 
 			for index, temperatureString := range temperatureStringArray {
 				temperatureValue, err := strconv.Atoi(temperatureString)
@@ -183,9 +195,13 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 				temperatureSlice[index] = temperatureValue
 			}
 
+			minerData.TempSensor = temperatureSlice
+
 		case "fan_sensors":
 			fanStringArray := strings.Split(sensorData, ",")
 			fanSlice := make([]int, len(fanStringArray))
+
+			fmt.Println("FAN STRING ARRAY", fanStringArray)
 
 			for index, fanString := range fanStringArray {
 				fanValue, err := strconv.Atoi(fanString)
@@ -194,6 +210,8 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 				}
 				fanSlice[index] = fanValue
 			}
+
+			minerData.FanSensor = fanSlice
 
 		}
 	}
@@ -226,7 +244,7 @@ func (r *MinerTimeSeriesRepository) ReadPoolData(mac_address string, interval in
 	// Modify the range to use the interval for days.
 	query := fmt.Sprintf(`from(bucket: "%s")
 		|> range(start: -%dh) // NOTE: pool_stats -> pool_data
-		|> filter(fn: (r) => r._measurement == "pool_stats" and r.macaddress == "%s")
+		|> filter(fn: (r) => r._measurement == "pool_stats" and r.mac_address == "%s")
 		|> sort(columns: ["_time"], desc: false)`, r.db.Bucket, interval, mac_address)
 
 	results, err := queryAPI.Query(context.Background(), query)
