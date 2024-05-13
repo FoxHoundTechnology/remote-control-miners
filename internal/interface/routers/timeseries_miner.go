@@ -16,10 +16,16 @@ import (
 // TODO: variadic function with a map object that comes with different vendor
 // TODO: set up an aggregated error response for miner controller logic
 // TODO: separate the response logic into controller layer
+// TODO: JSON body encryption for POST request
 
 type MinerTimeSeriesRequest struct {
 	MacAddress string `json:"mac_address"`
-	Interval   int    `json:"interval"` // minute
+
+	Interval     int    `json:"interval"`      // NOTE: max-min timestamp range
+	IntervalUnit string `json:"interval_unit"` // NOTE: h or m
+
+	Window     int    `json:"window"`
+	WindowUnit string `json:"window_unit"` // NOTE: h or m
 }
 
 func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
@@ -27,14 +33,16 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 	InfluxDBConnectionSettings := timeseries_database.Init()
 	minerTimeSeriesRepository := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
 
-	router.GET("/miners/timeseries/minerstats", func(ctx *gin.Context) {
+	router.POST("/miners/timeseries/minerstats", func(ctx *gin.Context) {
 		request := MinerTimeSeriesRequest{}
 		if err := ctx.ShouldBindJSON(&request); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
 			return
 		}
 
-		res, err := minerTimeSeriesRepository.ReadMinerData(request.MacAddress, request.Interval)
+		res, err := minerTimeSeriesRepository.ReadMinerData(request.MacAddress, request.Interval, request.IntervalUnit,
+			request.Window, request.WindowUnit,
+		)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error getting miner data",
@@ -49,14 +57,14 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 		})
 	})
 
-	router.GET("miners/timeseries/poolstats", func(ctx *gin.Context) {
-		requests := MinerTimeSeriesRequest{}
-		if err := ctx.ShouldBindJSON(&requests); err != nil {
+	router.POST("miners/timeseries/poolstats", func(ctx *gin.Context) {
+		request := MinerTimeSeriesRequest{}
+		if err := ctx.ShouldBindJSON(&request); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
 			return
 		}
 
-		res, err := minerTimeSeriesRepository.ReadPoolData(requests.MacAddress, requests.Interval)
+		res, err := minerTimeSeriesRepository.ReadPoolData(request.MacAddress, request.Interval, request.IntervalUnit, request.Window, request.WindowUnit)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"message": "Error getting pool data",
@@ -69,6 +77,5 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 			"message": "Successfully fetched pool timeseries data",
 			"data":    res,
 		})
-
 	})
 }
