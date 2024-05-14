@@ -125,7 +125,6 @@ func main() {
 		}
 
 		for _, fleet := range fleets {
-
 			pool.Submit(func() {
 				log.Println("=========================")
 				log.Printf("Processing scanner ID: %d\n", fleet.ID)
@@ -190,8 +189,6 @@ func main() {
 							return
 						}
 
-						fmt.Println("rawGetSystemInfoResponse: ", rawGetSystemInfoResponse.MinerType)
-
 						antMinerCGI := ant_miner_cgi_service.NewAntminerCGI(
 							miner_domain.Config{
 								Username: fleet.Scanner.Config.Username,
@@ -205,7 +202,6 @@ func main() {
 							rawGetSystemInfoResponse.MinerType,
 						)
 
-						fmt.Println("MODEL NAME =====>>>>>", rawGetSystemInfoResponse.MinerType)
 						// feed the ARPResponses channel with the antMinerCGI object
 						ARPResponses <- antMinerCGI
 					}(i, ip)
@@ -287,7 +283,6 @@ func main() {
 
 						case scanner_domain.Hashrate:
 							if antMinerCGIService.Stats.HashRate >= float64(alertCondition.TriggerValue) {
-								//
 								// increment the counter and update the status of miner
 								conditionCounter[scanner_domain.Hashrate]++
 								antMinerCGIService.Status = miner_domain.HashrateError
@@ -339,6 +334,7 @@ func main() {
 						alertFlag = false
 					}
 				}
+
 				fmt.Println("alertFlag", alertFlag)
 
 				/// TODO: alert layer support
@@ -433,8 +429,9 @@ func main() {
 						miner.Pools = []miner_repo.Pool{}
 						miner.FleetID = fleet.ID
 
-						// TODO: redo the pool
+						// // TODO: redo the pool
 						for _, pool := range antMinerCGIService.Pools {
+
 							newPool := miner_repo.Pool{
 								Pool: miner_domain.Pool{
 									Url:      pool.Url,
@@ -488,16 +485,7 @@ func main() {
 								Stale:      antMinerCGIService.Pools[0].Stale,
 							})
 
-						} else {
-							fmt.Println("No pool data available")
-							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
-								MacAddress: antMinerCGIService.Miner.MacAddress,
-								Accepted:   0,
-								Rejected:   0,
-								Stale:      0,
-							})
 						}
-
 						// result.RowsAffected != 0
 						// = a relevant miner already exists
 					} else {
@@ -529,16 +517,17 @@ func main() {
 							existingMiner.Pools[index].Pool.Url = pool.Url
 							existingMiner.Pools[index].Pool.User = pool.User
 							existingMiner.Pools[index].Pool.Pass = pool.Pass
+
 							existingMiner.Pools[index].Pool.Status = pool.Status
 							existingMiner.Pools[index].Pool.Accepted = pool.Accepted
 							existingMiner.Pools[index].Pool.Rejected = pool.Rejected
 							existingMiner.Pools[index].Pool.Stale = pool.Stale
 
 							postgresDB.Where("miner_id = ?", existingMiner.ID).Save(existingMiner.Pools[index])
+
 						}
 
 						existingMiner.Temperature = []int{}
-						fmt.Println("TEMPERATURE SENSOR", antMinerCGIService.Temperature)
 						for _, temperatureSensor := range antMinerCGIService.Temperature {
 							max := 0
 							for _, pcbSensor := range temperatureSensor.PcbSensors {
@@ -551,46 +540,28 @@ func main() {
 
 						existingMiner.Fan = []int{}
 						for _, fanSensor := range antMinerCGIService.Fan {
-							fmt.Println("FAN SENSOR SPEED", fanSensor.Speed, existingMiner.Miner.MacAddress)
 							existingMiner.Fan = append(existingMiner.Fan, fanSensor.Speed)
 						}
-
-						fmt.Println("FAN SENSOR AFTER UPDATE", existingMiner.Fan)
 
 						if err := postgresDB.Where("ID = ?", existingMiner.ID).Updates(existingMiner).Error; err != nil {
 							fmt.Println("error in seesssion ", err)
 						}
 
-						fmt.Println("service data befoere", antMinerCGIService)
-						fmt.Println("BEFORE WRITING IN", existingMiner)
-						fmt.Println("hashrate ", existingMiner.Miner.MacAddress)
 						// update the timeseries data for the existing miner
 						minerTimeSeriesRepository.WriteMinerData(existingMiner.Miner.MacAddress, miner_repo.MinerTimeSeries{
 							MacAddress: existingMiner.Miner.MacAddress,
 							HashRate:   int(existingMiner.Stats.HashRate),
-							TempSensor: existingMiner.Temperature, // reuse the existing temperature data
-							FanSensor:  existingMiner.Fan,         // reuse the existing fan data
+							TempSensor: existingMiner.Temperature, // TODO! FIX ME
+							FanSensor:  existingMiner.Fan,
 						})
 
-						fmt.Println("AFTER WRITING IN TIMESERIES", existingMiner)
-
-						// fmt.Println("pool index?? ", antMinerCGIService.Pools)
 						if antMinerCGIService.Pools != nil {
-
+							fmt.Println("WRITING THE POOL DATA FOR AN EXISTING MINER", antMinerCGIService.Pools)
 							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
 								MacAddress: antMinerCGIService.Miner.MacAddress,
 								Accepted:   antMinerCGIService.Pools[0].Accepted,
 								Rejected:   antMinerCGIService.Pools[0].Rejected,
 								Stale:      antMinerCGIService.Pools[0].Stale,
-							})
-
-						} else {
-
-							minerTimeSeriesRepository.WritePoolData(miner.Miner.MacAddress, miner_repo.PoolTimeSeries{
-								MacAddress: antMinerCGIService.Miner.MacAddress,
-								Accepted:   0,
-								Rejected:   0,
-								Stale:      0,
 							})
 
 						}
@@ -600,8 +571,8 @@ func main() {
 					minerTimeSeriesRepository.FlushMinerData()
 					minerTimeSeriesRepository.FlushPoolData()
 
-					fmt.Println("========================END OF WORKER=========================")
 				}
+				fmt.Println("========================END OF WORKER=========================")
 			})
 		}
 	}

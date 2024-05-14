@@ -22,6 +22,16 @@ func NewMinerRepository(db *gorm.DB) *MinerRepository {
 	}
 }
 
+func (r *MinerRepository) GetByMacAddress(macAddress string) (*Miner, error) {
+	miner := &Miner{}
+	err := r.db.Preload("Pools").First(&miner, "mac_address = ?", macAddress).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return miner, nil
+}
+
 func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error) {
 	err := r.db.First(&miner, "mac_address = ?", miner.Miner.MacAddress).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -29,6 +39,7 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 		if err != nil {
 			return 0, err
 		}
+
 		return miner.ID, nil
 	}
 

@@ -13,6 +13,16 @@ const (
 	LowPowerMode             // 2
 )
 
+type Command int
+
+const (
+	Normal Command = iota // 0
+	Sleep
+	LowPower
+	Reboot
+	// ... other miner commands go here
+)
+
 type Status int
 
 const (
@@ -42,11 +52,12 @@ type Pool struct {
 	Url      string
 	User     string
 	Pass     string
-	Status   string // string for now
+	Status   string // NOTE: string for now
 	Accepted int
 	Rejected int
 	Stale    int
 }
+
 type TemperatureSensor struct {
 	Name       string
 	PcbSensors []int

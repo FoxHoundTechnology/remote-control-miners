@@ -11,7 +11,7 @@ type MinerTimeSeries struct {
 
 type MinerTimeSeriesResponse struct {
 	Record     []MinerTimeSeries `json:"miner_time_series_record"`
-	TimeStamps []time.Time       `json:"timestamp"`
+	TimeStamps []time.Time       `json:"timestamps"`
 }
 
 type PoolTimeSeries struct {

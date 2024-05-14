@@ -48,7 +48,7 @@ func NewAntminerCGI(config domain.Config, miner domain.Miner, modelName string) 
 		FanCtrl:     true,
 		FanPwm:      "100",
 		FreqLevel:   "",
-		Model: 	 modelName,
+		Model:       modelName,
 		rwMutex:     new(sync.RWMutex),
 	}
 }
@@ -65,7 +65,8 @@ func (a *AntminerCGI) CheckConfig() error {
 	a.FanCtrl = GetMinerConfigResponse.BitmainFanCtrl
 	a.FanPwm = GetMinerConfigResponse.BitmainFanPWM
 	a.FreqLevel = GetMinerConfigResponse.FreqLevel
-	a.Pools = GetMinerConfigResponse.Pools
+	// TODO! R&D
+	// a.Pools = GetMinerConfigResponse.Pools ???
 	a.Mode = domain.Mode(GetMinerConfigResponse.MinerMode)
 
 	return nil
@@ -192,14 +193,20 @@ func (a *AntminerCGI) CheckPools() error {
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
 
-	for _, pool := range *GetPoolsResponse {
-		a.Pools = append(a.Pools, domain.Pool{
+	fmt.Println("pool elements before for loop in CheckPools :", GetPoolsResponse)
+
+	a.Pools = make([]domain.Pool, len(GetPoolsResponse))
+
+	for index, pool := range GetPoolsResponse {
+		a.Pools[index] = domain.Pool{
 			Status:   pool.Status,
 			Accepted: pool.Accepted,
 			Rejected: pool.Rejected,
 			Stale:    pool.Stale,
-		})
+		}
 	}
+
+	fmt.Println("a.Pools element after for loop in checkpools", a.Pools)
 
 	return nil
 }

@@ -130,13 +130,23 @@ func (r *MinerTimeSeriesRepository) FlushPoolData() error {
 }
 
 // NOTE: mac_address is null in the response object
-func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval int) (MinerTimeSeriesResponse, error) {
+func (r *MinerTimeSeriesRepository) ReadMinerData(
+	macAddress string,
+	interval int,
+	intervalUnit string,
+	window int,
+	windowUnit string,
+) (MinerTimeSeriesResponse, error) {
 	queryAPI := r.db.Client.QueryAPI(r.db.Org)
 	query := fmt.Sprintf(`from(bucket: "%s")
-	|> range(start: -%dm)
+	|> range(start: -%d%s)
 	|> filter(fn: (r) => r._measurement == "miner_data" and r.mac_address == "%s")
-	|> sort(columns: ["_time"], desc: false)`,
-		r.db.Bucket, interval, mac_address)
+	|> aggregateWindow(every: %d%s, createEmpty: true, fn: first) 
+	|> sort(columns: ["_time"], desc: false)
+	|> window(every: %d%s)
+	|> duplicate(column: "_stop", as: "_time")
+	|> window(every: inf)
+	`, r.db.Bucket, interval, intervalUnit, macAddress, window, windowUnit, window, windowUnit)
 
 	results, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -232,15 +242,22 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(mac_address string, interval i
 	}, nil
 }
 
-func (r *MinerTimeSeriesRepository) ReadPoolData(mac_address string, interval int) (PoolTimeSeriesResponse, error) {
+func (r *MinerTimeSeriesRepository) ReadPoolData(
+	macAddress string,
+	interval int,
+	intervalUnit string,
+	window int,
+	windowUnit string,
+) (PoolTimeSeriesResponse, error) {
 	queryAPI := r.db.Client.QueryAPI(r.db.Org)
 
 	// Modify the range to use the interval for days.
 	query := fmt.Sprintf(`from(bucket: "%s")
-		|> range(start: -%dm) 
+		|> range(start: -%d%s) 
 		|> filter(fn: (r) => r._measurement == "pool_data" and r.mac_address == "%s")
-		|> sort(columns: ["_time"], desc: false)`,
-		r.db.Bucket, interval, mac_address)
+		|> sort(columns: ["_time"], desc: false)
+	    |> aggregateWindow(every: %d%s, createEmpty: true, fn: mean)`,
+		r.db.Bucket, interval, intervalUnit, macAddress, window, windowUnit)
 
 	results, err := queryAPI.Query(context.Background(), query)
 	if err != nil {
@@ -269,8 +286,6 @@ func (r *MinerTimeSeriesRepository) ReadPoolData(mac_address string, interval in
 		default:
 			fmt.Println("unknown type")
 		}
-
-		fmt.Println("THIS IS THE VALUE INSERING INTO THE POOL DATA MAP ARRAY", value)
 
 		poolData := poolDataMapArray[t]
 		switch fieldName {

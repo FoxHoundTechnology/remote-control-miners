@@ -48,7 +48,7 @@ type GetPoolsResponse struct {
 	Stale    int    `json:"stale"`     // stale shares
 }
 
-func AntMinerCGIGetPools(username, password, ipAddress string) (*[]GetPoolsResponse, error) {
+func AntMinerCGIGetPools(username, password, ipAddress string) ([]GetPoolsResponse, error) {
 
 	t := http_auth.NewTransport(username, password)
 
@@ -75,9 +75,7 @@ func AntMinerCGIGetPools(username, password, ipAddress string) (*[]GetPoolsRespo
 		return nil, err
 	}
 
-	fmt.Println("rawGetPoolsResponse: ", rawGetPoolsResponse.Pools[0].Index, rawGetPoolsResponse.Pools[0].URL, rawGetPoolsResponse.Pools[0].User, rawGetPoolsResponse.Pools[0].Status, rawGetPoolsResponse.Pools[0].Accepted, rawGetPoolsResponse.Pools[0].Rejected, rawGetPoolsResponse.Pools[0].Stale)
-
-	var pools []GetPoolsResponse
+	pools := make([]GetPoolsResponse, 0, len(rawGetPoolsResponse.Pools))
 	for _, pool := range rawGetPoolsResponse.Pools {
 		pools = append(pools, GetPoolsResponse{
 			Index:    pool.Index,
@@ -90,5 +88,7 @@ func AntMinerCGIGetPools(username, password, ipAddress string) (*[]GetPoolsRespo
 		})
 	}
 
-	return &pools, nil
+	fmt.Println("pool stats in RAW CALL <<<<<<<-TEST->>>>>>>", pools)
+
+	return pools, nil
 }
