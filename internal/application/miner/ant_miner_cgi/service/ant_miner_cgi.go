@@ -75,7 +75,6 @@ func (a *AntminerCGI) CheckConfig() error {
 		a.Mode = domain.Mode(GetMinerConfigResponse.MinerMode)
 	}
 
-	fmt.Println("new miner mode in service", domain.Mode(GetMinerConfigResponse.MinerMode))
 	return nil
 }
 
