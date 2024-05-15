@@ -133,15 +133,25 @@ func AntMinerCGIGetStats(username, password, ipAddress string) (*StatsResponse, 
 		}, nil
 	}
 
+	mode := 0
+	switch rawGetStatsResponse.Stats[0].MinerMode {
+	case 0:
+		mode = 0
+	case 1:
+		mode = 1
+	case 3: // low power mode
+		mode = 2
+	}
+
 	return &StatsResponse{
 		Status:    rawGetStatsResponse.Status.Status,
 		Elapsed:   rawGetStatsResponse.Stats[0].Elapsed,
 		RateIdeal: rawGetStatsResponse.Stats[0].RateIdeal,
 		Rate5s:    rawGetStatsResponse.Stats[0].Rate5s,
 		RateUnit:  rawGetStatsResponse.Stats[0].RateUnit,
-		// Mode:      miner.Mode(rawGetStatsResponse.Stats[0].MinerMode),
-		Chain:    rawGetStatsResponse.Stats[0].Chain,
-		Fan:      rawGetStatsResponse.Stats[0].Fan,
-		ChainNum: rawGetStatsResponse.Stats[0].ChainNum,
+		Mode:      miner.Mode(mode),
+		Chain:     rawGetStatsResponse.Stats[0].Chain,
+		Fan:       rawGetStatsResponse.Stats[0].Fan,
+		ChainNum:  rawGetStatsResponse.Stats[0].ChainNum,
 	}, nil
 }

@@ -2,6 +2,7 @@ package routers
 
 import (
 	"net/http"
+	"strconv"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -65,6 +66,8 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 				"data":    err,
 			})
 		}
+
+		ctx.Header("Cache-Control", "public, max-age="+strconv.Itoa(5))
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "successfully fetched miners",

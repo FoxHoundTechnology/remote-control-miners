@@ -507,7 +507,11 @@ func main() {
 						existingMiner.Config.Username = antMinerCGIService.Config.Username
 						existingMiner.Config.Password = antMinerCGIService.Config.Password
 						existingMiner.Config.Firmware = antMinerCGIService.Config.Firmware
+
+						fmt.Println("new miner mode for db", antMinerCGIService.Mode)
 						existingMiner.Mode = antMinerCGIService.Mode
+						fmt.Println("new miner mode for field update", existingMiner.Mode)
+
 						existingMiner.ModelName = antMinerCGIService.Model
 
 						existingMiner.Status = antMinerCGIService.Status
@@ -543,7 +547,7 @@ func main() {
 							existingMiner.Fan = append(existingMiner.Fan, fanSensor.Speed)
 						}
 
-						if err := postgresDB.Where("ID = ?", existingMiner.ID).Updates(existingMiner).Error; err != nil {
+						if err := postgresDB.Where("ID = ?", existingMiner.ID).Save(existingMiner).Error; err != nil {
 							fmt.Println("error in seesssion ", err)
 						}
 
@@ -551,7 +555,7 @@ func main() {
 						minerTimeSeriesRepository.WriteMinerData(existingMiner.Miner.MacAddress, miner_repo.MinerTimeSeries{
 							MacAddress: existingMiner.Miner.MacAddress,
 							HashRate:   int(existingMiner.Stats.HashRate),
-							TempSensor: existingMiner.Temperature, // TODO! FIX ME
+							TempSensor: existingMiner.Temperature, // TODO! FIX ME, with all the temp sensors
 							FanSensor:  existingMiner.Fan,
 						})
 

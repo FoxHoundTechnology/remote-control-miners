@@ -65,10 +65,17 @@ func (a *AntminerCGI) CheckConfig() error {
 	a.FanCtrl = GetMinerConfigResponse.BitmainFanCtrl
 	a.FanPwm = GetMinerConfigResponse.BitmainFanPWM
 	a.FreqLevel = GetMinerConfigResponse.FreqLevel
+
 	// TODO! R&D
 	// a.Pools = GetMinerConfigResponse.Pools ???
-	a.Mode = domain.Mode(GetMinerConfigResponse.MinerMode)
 
+	if GetMinerConfigResponse.MinerMode == 3 {
+		a.Mode = domain.Mode(domain.LowPowerMode)
+	} else {
+		a.Mode = domain.Mode(GetMinerConfigResponse.MinerMode)
+	}
+
+	fmt.Println("new miner mode in service", domain.Mode(GetMinerConfigResponse.MinerMode))
 	return nil
 }
 
