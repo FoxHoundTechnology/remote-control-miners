@@ -23,7 +23,7 @@ fxhnd.json
 # Go workspace file
 go.work
 
-# front-end specific
+front-end specific
 web/node_modules
 web/.next
 web/.env.*
