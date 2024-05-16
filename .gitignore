@@ -26,5 +26,7 @@ go.work
 # front-end specific
 web/node_modules
 web/.next
+web/.env.*
+
 docker-compose.prod.yml
 Caddyfile
