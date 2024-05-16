@@ -91,7 +91,7 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 			FleetID:   fleet.ID,
 		}
 
-		if result := db.Where("name = ?", scanner.Name).First(&scanner_repo.Scanner{}); result.RowsAffected == 0 {
+		if result := db.Where("name = ? AND fleet_id = ?", scanner.Name, fleet.ID).First(&scanner_repo.Scanner{}); result.RowsAffected == 0 {
 			if err := db.Where("fleet_id = ?", fleet.ID).Save(&scanner).Error; err != nil {
 				fmt.Println("ERROR IN SCANNER", err)
 				// return err
@@ -107,7 +107,7 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 		}
 
 		// Insert or update the scanner
-		if result := db.Where("name = ?", fleetConfig.Alert.Name).First(&scanner_repo.Alert{}); result.RowsAffected == 0 {
+		if result := db.Where("name = ? AND scanner_id = ?", fleetConfig.Alert.Name, scanner.ID).First(&scanner_repo.Alert{}); result.RowsAffected == 0 {
 			if err := db.Where("scanner_id = ?", scanner.ID).Save(&alert).Error; err != nil {
 				fmt.Println("ERROR IN SCANNER", err)
 				// return err

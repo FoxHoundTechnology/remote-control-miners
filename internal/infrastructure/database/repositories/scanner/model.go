@@ -12,7 +12,7 @@ import (
 
 type Scanner struct {
 	gorm.Model
-	Name      string           `gorm:"unique"`
+	Name      string
 	Scanner   domain.Scanner   `gorm:"embedded;"`
 	Config    domain.Config    `gorm:"embedded;"`
 	MinerType domain.MinerType `gorm:"comment:'AntMinerCgi=0'"`
@@ -25,7 +25,7 @@ type Scanner struct {
 
 type Alert struct {
 	gorm.Model
-	Name   string                 `gorm:"unique"`
+	Name   string
 	Action domain.AlertActionType `gorm:"comment:'Reboot=0, Sleep=1, Normal=2'"`
 	State  domain.AlertState      `gorm:"comment:'Monitoring=0, Triggered=1, Resolving=2, Resolved=3'"`
 	Active bool                   `gorm:"default:true"`

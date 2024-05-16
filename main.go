@@ -508,13 +508,8 @@ func main() {
 						existingMiner.Config.Username = antMinerCGIService.Config.Username
 						existingMiner.Config.Password = antMinerCGIService.Config.Password
 						existingMiner.Config.Firmware = antMinerCGIService.Config.Firmware
-
-						fmt.Println("new miner mode for db", antMinerCGIService.Mode)
 						existingMiner.Mode = antMinerCGIService.Mode
-						fmt.Println("new miner mode for field update", existingMiner.Mode)
-
 						existingMiner.ModelName = antMinerCGIService.Model
-
 						existingMiner.Status = antMinerCGIService.Status
 						existingMiner.FleetID = fleet.ID
 
