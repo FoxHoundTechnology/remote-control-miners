@@ -14,6 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// TODO: data type validation
+// TODO: error handling
+
 type Config struct {
 	Fleets []struct {
 		Name    string `json:"name"`
@@ -23,6 +26,7 @@ type Config struct {
 			EndIP     string `json:"end_ip"`
 			Active    bool   `json:"active"`
 			Location  string `json:"location"`
+			Interval  int    `json:"interval"`
 			Username  string `json:"username"`
 			Password  string `json:"password"`
 			MinerType int    `json:"miner_type"`
@@ -48,11 +52,11 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 	var loadedConfig Config
 	if err := json.NewDecoder(configFile).Decode(&loadedConfig); err != nil {
 		log.Fatalf("Error decoding JSON: %s", err)
-		return err
 	}
 
 	// Process each fleet
 	for index, fleetConfig := range loadedConfig.Fleets {
+		fmt.Println("INDEX FOR LOADED CONFIG", index)
 		fleet := fleet_repo.Fleet{
 			Name: fleetConfig.Name,
 		}
@@ -62,12 +66,11 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 		if err := db.Where("name = ?", fleet.Name).First(&existingFleet).Error; err != nil {
 			if err == gorm.ErrRecordNotFound {
 				if err := db.Create(&fleet).Error; err != nil {
-					fmt.Println("ERROR IN DevMigrate", err)
-					return err
+					fmt.Println("Error in registering fleet data")
 				}
 			} else {
 				fmt.Println("ERROR IN DevMigrate", err)
-				return err
+				// ? TODO
 			}
 		}
 
@@ -89,9 +92,9 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 		}
 
 		if result := db.Where("name = ?", scanner.Name).First(&scanner_repo.Scanner{}); result.RowsAffected == 0 {
-			if err := db.Create(&scanner).Error; err != nil {
+			if err := db.Where("fleet_id = ?", fleet.ID).Save(&scanner).Error; err != nil {
 				fmt.Println("ERROR IN SCANNER", err)
-				return err
+				// return err
 			}
 		}
 
@@ -105,9 +108,9 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 
 		// Insert or update the scanner
 		if result := db.Where("name = ?", fleetConfig.Alert.Name).First(&scanner_repo.Alert{}); result.RowsAffected == 0 {
-			if err := db.Create(&scanner).Error; err != nil {
+			if err := db.Where("scanner_id = ?", scanner.ID).Save(&alert).Error; err != nil {
 				fmt.Println("ERROR IN SCANNER", err)
-				return err
+				// return err
 			}
 		}
 
@@ -121,10 +124,10 @@ func DevMigrate(db *gorm.DB, configFile *os.File) error {
 				AlertID:       alert.ID,
 			}
 
-			if result := db.Where("condition_type = ?", alertCondition.ConditionType).First(&scanner_repo.AlertCondition{}); result.RowsAffected == 0 {
-				if err := db.Create(&condition).Error; err != nil {
+			if result := db.Where("condition_type = ? AND alert_id = ?", alertCondition.ConditionType, alert.ID).First(&scanner_repo.AlertCondition{}); result.RowsAffected == 0 {
+				if err := db.Where("alert_id = ?", alert.ID).Save(&condition).Error; err != nil {
 					fmt.Println("ERROR IN ALERT", err)
-					return err
+					// return err
 				}
 			}
 		}

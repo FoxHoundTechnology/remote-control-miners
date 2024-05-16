@@ -7,7 +7,7 @@ import (
 )
 
 // TODO: add the logic to prevent the same conditions type
-//
+// TODO: test cascade condition for onUpdate/onDelete
 //	(e.g. Hashrate and Hashrate) from being added to the same alert
 
 type Scanner struct {
