@@ -22,3 +22,9 @@ fxhnd.json
 
 # Go workspace file
 go.work
+
+# front-end specific
+web/node_modules
+web/.next
+docker-compose.prod.yml
+Caddyfile
