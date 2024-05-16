@@ -34,7 +34,7 @@ type MinerControlRequest struct {
 
 func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 
-	router.POST("/miners/detail", func(ctx *gin.Context) {
+	router.POST("/api/miners/detail", func(ctx *gin.Context) {
 		var minerDetailRequest MinerDetailRequest
 		if err := ctx.ShouldBindJSON(&minerDetailRequest); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
@@ -57,7 +57,7 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 		})
 	})
 
-	router.GET("/miners/list", func(ctx *gin.Context) {
+	router.GET("/api/miners/list", func(ctx *gin.Context) {
 		minerRepository := miner_repo.NewMinerRepository(db)
 		miners, err := minerRepository.List()
 		if err != nil {
@@ -75,7 +75,7 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 		})
 	})
 
-	router.POST("/miners/control", func(ctx *gin.Context) {
+	router.POST("/api/miners/control", func(ctx *gin.Context) {
 
 		var minerControlRequest MinerControlRequest
 		if err := ctx.ShouldBindJSON(&minerControlRequest); err != nil {

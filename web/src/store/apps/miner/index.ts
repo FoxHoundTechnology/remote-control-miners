@@ -4,7 +4,7 @@ import { MinerType } from 'src/types/apps/minerTypes'
 const remoteControlServerUrl = process.env.REMOTE_CONTROL_SERVER_URL
 
 export const minerAPIService = axios.create({
-  baseURL: `${remoteControlServerUrl}/miners`
+  baseURL: `${remoteControlServerUrl}/api/miners`
 })
 // TODO: store management with zustand
 // TODO: enum map fo mode/status (with falsy values supports)

@@ -79,7 +79,7 @@ dotenv.config()
 const remoteControlServerUrl = process.env.REMOTE_CONTROL_SERVER_URL
 
 export const remoteControlAPIService = axios.create({
-  baseURL: `${remoteControlServerUrl}/miners`,
+  baseURL: `${remoteControlServerUrl}/api/miners`,
   headers: {
     'Content-Type': 'application/json'
   }

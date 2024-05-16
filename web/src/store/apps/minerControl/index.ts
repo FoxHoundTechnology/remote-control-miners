@@ -23,7 +23,7 @@ export enum Command {
 }
 
 export const remoteControlAPIService = axios.create({
-  baseURL: `${remoteControlServerUrl}/miners/control`
+  baseURL: `${remoteControlServerUrl}/api/miners/control`
 })
 
 // TODO: logic to aggregate the macaddress
