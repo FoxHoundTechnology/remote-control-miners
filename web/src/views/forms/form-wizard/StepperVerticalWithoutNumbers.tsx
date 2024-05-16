@@ -14,9 +14,6 @@ import StepContent from '@mui/material/StepContent'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 
-import StepperCustomDot from './StepperCustomDot'
-
-
 import StepperWrapper from 'src/@core/styles/mui/stepper'
 
 const steps = [
@@ -66,14 +63,12 @@ const StepperVerticalWithoutNumbers = () => {
             {steps.map((step, index) => {
               return (
                 <Step key={index} className={clsx({ active: activeStep === index })}>
-                  <StepLabel StepIconComponent={StepperCustomDot}>
-                    <div className='step-label'>
-                      <div>
-                        <Typography className='step-title'>{step.title}</Typography>
-                        <Typography className='step-subtitle'>{step.subtitle}</Typography>
-                      </div>
+                  <div className='step-label'>
+                    <div>
+                      <Typography className='step-title'>{step.title}</Typography>
+                      <Typography className='step-subtitle'>{step.subtitle}</Typography>
                     </div>
-                  </StepLabel>
+                  </div>
                   <StepContent>
                     <Typography>{step.description}</Typography>
                     <div className='button-wrapper'>

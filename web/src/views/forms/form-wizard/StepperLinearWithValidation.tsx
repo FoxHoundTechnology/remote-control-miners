@@ -27,8 +27,6 @@ import { yupResolver } from '@hookform/resolvers/yup'
 
 import Icon from 'src/@core/components/icon'
 
-import StepperCustomDot from './StepperCustomDot'
-
 import StepperWrapper from 'src/@core/styles/mui/stepper'
 
 interface State {
@@ -640,15 +638,13 @@ const StepperLinearWithValidation = () => {
 
               return (
                 <Step key={index}>
-                  <StepLabel {...labelProps} StepIconComponent={StepperCustomDot}>
-                    <div className='step-label'>
-                      <Typography className='step-number'>{`0${index + 1}`}</Typography>
-                      <div>
-                        <Typography className='step-title'>{step.title}</Typography>
-                        <Typography className='step-subtitle'>{step.subtitle}</Typography>
-                      </div>
+                  <div className='step-label'>
+                    <Typography className='step-number'>{`0${index + 1}`}</Typography>
+                    <div>
+                      <Typography className='step-title'>{step.title}</Typography>
+                      <Typography className='step-subtitle'>{step.subtitle}</Typography>
                     </div>
-                  </StepLabel>
+                  </div>
                 </Step>
               )
             })}
