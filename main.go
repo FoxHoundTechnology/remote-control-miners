@@ -107,7 +107,7 @@ func main() {
 	workerErrors := make(chan error)
 	defer close(workerErrors)
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(300 * time.Second)
 	defer ticker.Stop()
 
 	// Create a context that can be cancelled
