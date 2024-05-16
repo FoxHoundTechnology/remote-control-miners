@@ -125,6 +125,7 @@ func main() {
 		}
 
 		for _, fleet := range fleets {
+			fleet := fleet
 			pool.Submit(func() {
 				log.Println("=========================")
 				log.Printf("Processing scanner ID: %d\n", fleet.ID)
@@ -282,7 +283,7 @@ func main() {
 						switch alertCondition.ConditionType {
 
 						case scanner_domain.Hashrate:
-							if antMinerCGIService.Stats.HashRate >= float64(alertCondition.TriggerValue) {
+							if antMinerCGIService.Stats.HashRate <= float64(alertCondition.TriggerValue) {
 								// increment the counter and update the status of miner
 								conditionCounter[scanner_domain.Hashrate]++
 								antMinerCGIService.Status = miner_domain.HashrateError
@@ -576,7 +577,7 @@ func main() {
 					minerTimeSeriesRepository.FlushPoolData()
 
 				}
-				fmt.Println("========================END OF WORKER=========================")
+				fmt.Println("========================END OF WORKER=========================", fleet.Name)
 			})
 		}
 	}
