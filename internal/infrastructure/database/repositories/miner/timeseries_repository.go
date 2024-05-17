@@ -15,6 +15,8 @@ import (
 	timeseries_database "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/influxdb"
 )
 
+// TODO: aggregateWindow with more accurate way of selecting the median value
+// TODO: data retension policy
 // TODO: context cancellation
 // TODO: data race condition
 // TODO: RW mutex
@@ -185,9 +187,6 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 		case "hashrate":
 			minerData.HashRate = hashrate
 		case "temp_sensors":
-
-			// perhaps updateing the array here?
-
 			temperatureStringArray := strings.Split(sensorData, ",")
 			temperatureSlice := make([]int, len(temperatureStringArray))
 
@@ -195,8 +194,10 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 				temperatureValue, err := strconv.Atoi(temperatureString)
 				if err != nil {
 					fmt.Printf("error converting temperature value: %s\n", err)
+					temperatureSlice[index] = 0
+				} else {
+					temperatureSlice[index] = temperatureValue
 				}
-				temperatureSlice[index] = temperatureValue
 			}
 
 			minerData.TempSensor = temperatureSlice
@@ -206,17 +207,16 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 			fanSlice := make([]int, len(fanStringArray))
 
 			fmt.Println("FAN STRING ARRAY", fanStringArray)
-
 			for index, fanString := range fanStringArray {
 				fanValue, err := strconv.Atoi(fanString)
 				if err != nil {
 					fmt.Printf("error converting fan value: %s\n", err)
+					fanSlice[index] = 0
+				} else {
+					fanSlice[index] = fanValue
 				}
-				fanSlice[index] = fanValue
 			}
-
 			minerData.FanSensor = fanSlice
-
 		}
 	}
 

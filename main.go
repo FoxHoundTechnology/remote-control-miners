@@ -40,6 +40,7 @@ import (
 // TODO: batch operation for miner stats update
 // TODO: alert layer support
 // TODO: R&D for pool library's memory leak
+// TODO: create a list object for pool function calls
 // TODO: logic for detecting offline miners
 // TODO: logic for identifying the active pool
 // TODO: logic for combined miner error supports
@@ -101,7 +102,7 @@ func main() {
 		log.Println("worker paniced %v", p)
 	}
 
-	pool := pond.New(20, 100, pond.PanicHandler(panicHandler))
+	pool := pond.New(100, 100, pond.PanicHandler(panicHandler))
 	defer pool.StopAndWait()
 
 	workerErrors := make(chan error)
@@ -126,6 +127,7 @@ func main() {
 
 		for _, fleet := range fleets {
 			fleet := fleet
+
 			pool.Submit(func() {
 				log.Println("=========================")
 				log.Printf("Processing scanner ID: %d\n", fleet.ID)
@@ -272,8 +274,6 @@ func main() {
 				for _, antMinerCGIService := range antMinerCGIServiceArray {
 					fmt.Println("ant miner alert response before checking the conditions")
 					for _, alertCondition := range fleet.Scanner.Alert.Condition {
-
-						fmt.Println("alert condition", alertCondition.ConditionType, alertCondition.TriggerValue, alertCondition.MachineCount)
 
 						if antMinerCGIService.Mode == miner_domain.SleepMode {
 							fmt.Println("Skipping the alert service logic with mode", antMinerCGIService.Mode)
@@ -424,7 +424,7 @@ func main() {
 						}
 
 						miner.ModelName = antMinerCGIService.Model
-						miner.Mode = miner_domain.NormalMode
+						miner.Mode = miner_domain.NormalMode // _
 
 						miner.Status = miner_domain.Online
 						miner.Pools = []miner_repo.Pool{}
@@ -444,7 +444,6 @@ func main() {
 									Stale:    pool.Stale,
 								},
 							}
-
 							miner.Pools = append(miner.Pools, newPool)
 						}
 
@@ -485,8 +484,8 @@ func main() {
 								Rejected:   antMinerCGIService.Pools[0].Rejected,
 								Stale:      antMinerCGIService.Pools[0].Stale,
 							})
-
 						}
+
 						// result.RowsAffected != 0
 						// = a relevant miner already exists
 					} else {
@@ -524,7 +523,6 @@ func main() {
 							existingMiner.Pools[index].Pool.Stale = pool.Stale
 
 							postgresDB.Where("miner_id = ?", existingMiner.ID).Save(existingMiner.Pools[index])
-
 						}
 
 						existingMiner.Temperature = []int{}
@@ -551,7 +549,7 @@ func main() {
 						minerTimeSeriesRepository.WriteMinerData(existingMiner.Miner.MacAddress, miner_repo.MinerTimeSeries{
 							MacAddress: existingMiner.Miner.MacAddress,
 							HashRate:   int(existingMiner.Stats.HashRate),
-							TempSensor: existingMiner.Temperature, // TODO! FIX ME, with all the temp sensors
+							TempSensor: existingMiner.Temperature,
 							FanSensor:  existingMiner.Fan,
 						})
 
@@ -563,14 +561,12 @@ func main() {
 								Rejected:   antMinerCGIService.Pools[0].Rejected,
 								Stale:      antMinerCGIService.Pools[0].Stale,
 							})
-
 						}
 					}
 
 					// Flush the timeseries data to the database
 					minerTimeSeriesRepository.FlushMinerData()
 					minerTimeSeriesRepository.FlushPoolData()
-
 				}
 				fmt.Println("========================END OF WORKER=========================", fleet.Name)
 			})
