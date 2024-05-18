@@ -143,8 +143,8 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
     const timestampArr: string[] = []
 
     // First, ensure that miner_time_series_record exists
-    if (minerStatsQuery?.data.miner_time_series_record) {
-      for (const record of minerStatsQuery.data.miner_time_series_record) {
+    if (minerStatsQuery?.data?.miner_time_series_record) {
+      for (const record of minerStatsQuery?.data.miner_time_series_record) {
         hashrateArr.push(record.hashrate)
         tempSensorArr.push(record.temp_sensor)
         fanSensorArr.push(record.fan_sensor)
@@ -153,7 +153,7 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
 
     // // // Fill timestampArr only up to the length of the longest array from above
     if (minerStatsQuery?.data?.timestamps) {
-      for (let i = 0; i < minerStatsQuery?.data.timestamps.length; i++) {
+      for (let i = 0; i < minerStatsQuery?.data?.timestamps?.length; i++) {
         timestampArr.push(String(minerStatsQuery?.data.timestamps[i]))
       }
     }
