@@ -93,7 +93,6 @@ const NotificationSettings = () => {
           <CardContent>
             <Box sx={{ mb: 5 }}>
               <Typography sx={{ fontWeight: 500 }}>Alerts and Warning</Typography>
-              <Typography variant='body2'>Display content from your connected accounts on your site</Typography>
             </Box>
 
             <Grid container spacing={5}>

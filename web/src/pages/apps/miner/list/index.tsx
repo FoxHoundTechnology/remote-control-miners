@@ -33,8 +33,10 @@ import { convertDateTime, secondsToDHM } from 'src/util'
 import StatsCards from 'src/views/apps/miner/components/StatCards'
 import { useMutation, useQuery } from 'react-query'
 import { Command, sendCommand } from 'src/store/apps/minerControl'
+import { Skeleton } from '@mui/material'
 
-// TODO: fix the status label logic
+// TODO: fix the filter
+// TODO: separte the skelton loader from the main table component
 // TODO: stats card's slow rendering
 // TODO: enum for status/label/color map
 // TODO: seggregate the logic for remoteControlCallback into store management folder/component
@@ -343,7 +345,6 @@ const columns: GridColDef[] = [
     renderCell: ({ row }: CellType) => {
       const lastUpdatedDate = row?.lastUpdated ? convertDateTime(row.lastUpdated).date : 'N/A'
       const lastUpdatedTime = row?.lastUpdated ? convertDateTime(row.lastUpdated).time : 'N/A'
-
       return (
         <Typography noWrap variant='caption'>
           {`${lastUpdatedTime}`}{' '}
@@ -404,20 +405,19 @@ const MinerList = () => {
     } else {
       const filteredData = store.filter((item: any) =>
         [
-          'id',
+          // 'id',
           'macAddress',
           'ip',
-          'name',
-          'minerType',
+          // 'name',
+          // 'minerType',
           // 'serialNumber',
           'location',
-          'firmware',
-          'client',
-          'fleetName',
-          'ipRange'
+          'firmware'
+          // 'client',
+          // 'fleetName',
+          // 'ipRange'
         ].some((key: any) => {
           const val = item[key]
-
           return val !== undefined && val.toString().toLowerCase().includes(lowercasedValue)
         })
       )
@@ -497,9 +497,6 @@ const MinerList = () => {
       const selectedMiner = store.find(miner => miner.id === id)
       macAddressArray.push(selectedMiner.macAddress)
     })
-
-    console.log('sending the request to', macAddressArray)
-    console.log('with the command name', command)
 
     controllerMutation.mutate({
       MacAddressess: macAddressArray,
@@ -626,24 +623,44 @@ const MinerList = () => {
           {/*
               NOTE: first we will edit the data structure and  
           */}
-          <DataGrid
-            autoHeight
-            rows={store ?? []}
-            columns={columns}
-            disableRowSelectionOnClick
-            checkboxSelection
-            // NOTE: only select the id of each row
-            onRowSelectionModelChange={newRowSelectionModel => {
-              setRowSelectionModel(newRowSelectionModel)
-            }}
-            rowSelectionModel={rowSelectionModel}
-            pageSizeOptions={[50, 100, 500]}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-          />
+          {isLoading && (
+            <Grid container paddingX={6} paddingY={3}>
+              <Grid item xs={12}>
+                <Skeleton animation='wave' height={40} />
+              </Grid>
+              <Grid item xs={12}>
+                <Skeleton animation='wave' height={40} />
+              </Grid>
+              <Grid item xs={12}>
+                <Skeleton animation='wave' height={40} />
+              </Grid>
+              <Grid item xs={12}>
+                <Skeleton animation='wave' height={40} />
+              </Grid>
+              <Grid item xs={12}>
+                <Skeleton animation='wave' height={40} />
+              </Grid>
+            </Grid>
+          )}
+          {data && (
+            <DataGrid
+              autoHeight
+              rows={store ?? []}
+              columns={columns}
+              disableRowSelectionOnClick
+              checkboxSelection
+              // NOTE: only select the id of each row
+              onRowSelectionModelChange={newRowSelectionModel => {
+                setRowSelectionModel(newRowSelectionModel)
+              }}
+              rowSelectionModel={rowSelectionModel}
+              pageSizeOptions={[50, 100, 500]}
+              paginationModel={paginationModel}
+              onPaginationModelChange={setPaginationModel}
+            />
+          )}
         </Card>
       </Grid>
-      {/* we will make the same thing for miner data type */}
     </Grid>
   )
 }

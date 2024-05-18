@@ -91,57 +91,6 @@ const TabList = styled(MuiTabList)<TabListProps>(({ theme }) => ({
   }
 }))
 
-type AggregatedArrays = {
-  hashrateArr: number[]
-  tempSensorArr: number[][]
-  fanSensorArr: number[][]
-  timestampArr: string[]
-}
-
-// const separateDataArrays = (data: MinerTimeSeriesDataResponse): AggregatedArrays => {
-//   console.log('MinerTimeSeries Data Response in separateDataDarrays', data)
-
-//   const hashrateArr: number[] = []
-//   const tempSensorArr: number[][] = []
-//   const fanSensorArr: number[][] = []
-//   const timestampArr: string[] = []
-
-//   // First, ensure that miner_time_series_record exists
-//   if (data?.miner_time_series_record) {
-//     for (const record of data.miner_time_series_record) {
-//       if (record?.hashrate !== undefined) {
-//         hashrateArr.push(record.hashrate)
-//       }
-
-//       if (record?.temp_sensor !== undefined) {
-//         tempSensorArr.push(record.temp_sensor)
-//       }
-
-//       if (record?.fan_sensor !== undefined) {
-//         fanSensorArr.push(record.fan_sensor)
-//       }
-//     }
-//   }
-
-//   // // Fill timestampArr only up to the length of the longest array from above
-//   if (data?.timestamps) {
-//     for (let i = 0; i < data?.timestamps.length; i++) {
-//       if (data.timestamps[i] !== undefined) {
-//         timestampArr.push(String(data.timestamps[i]))
-//       }
-//     }
-//   }
-
-//   console.log('time stamp arr in CONVERT IN VIEW', timestampArr)
-
-//   return {
-//     hashrateArr,
-//     tempSensorArr,
-//     fanSensorArr,
-//     timestampArr
-//   }
-// }
-
 const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
   const theme = useTheme()
 
@@ -153,15 +102,27 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
   }
 
   // Use React Query to fetch data
-  const minerDetailsQuery = useQuery('minerDetails', () => fetchMinerInfo(macAddress))
-  const minerStatsQuery = useQuery<MinerTimeSeriesDataResponse>('minerStats', () =>
-    fetchMinerStats(macAddress, 24, 'h', 1, 'h')
+  const minerDetailsQuery = useQuery('minerDetails', () => fetchMinerInfo(macAddress), {
+    staleTime: 0,
+    cacheTime: 0
+  })
+
+  const minerStatsQuery = useQuery<MinerTimeSeriesDataResponse>(
+    'minerStats',
+    () => fetchMinerStats(macAddress, 24, 'h', 1, 'h'),
+    {
+      staleTime: 0,
+      cacheTime: 0
+    }
   )
 
-  console.log('general fetchMinerStats', minerStatsQuery)
-
-  const poolStatsQuery = useQuery<PoolTimeSeriesDataResponse>('poolStats', () =>
-    fetchPoolStats(macAddress, 24, 'h', 1, 'h')
+  const poolStatsQuery = useQuery<PoolTimeSeriesDataResponse>(
+    'poolStats',
+    () => fetchPoolStats(macAddress, 24, 'h', 1, 'h'),
+    {
+      staleTime: 0,
+      cacheTime: 0
+    }
   )
 
   // const [isLoading, setIsLoading] = useState<boolean>(false)
@@ -182,7 +143,7 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
     const timestampArr: string[] = []
 
     // First, ensure that miner_time_series_record exists
-    if (minerStatsQuery.data.miner_time_series_record) {
+    if (minerStatsQuery?.data.miner_time_series_record) {
       for (const record of minerStatsQuery.data.miner_time_series_record) {
         hashrateArr.push(record.hashrate)
         tempSensorArr.push(record.temp_sensor)
@@ -191,7 +152,7 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
     }
 
     // // // Fill timestampArr only up to the length of the longest array from above
-    if (minerStatsQuery.data.timestamps) {
+    if (minerStatsQuery?.data?.timestamps) {
       for (let i = 0; i < minerStatsQuery?.data.timestamps.length; i++) {
         timestampArr.push(String(minerStatsQuery?.data.timestamps[i]))
       }
@@ -395,7 +356,7 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
                   </TabPanel>
                   <TabPanel value='pool'>
                     <PoolStatsChart
-                      poolStatsArr={poolStatsQuery.data.pool_time_series_record}
+                      poolStatsArr={poolStatsQuery?.data?.pool_time_series_record}
                       timeStampArr={timestampArr}
                     />
                   </TabPanel>

@@ -70,9 +70,6 @@ type PoolStatsChartProps = {
 }
 
 const PoolStatsChart = ({ poolStatsArr, timeStampArr }: PoolStatsChartProps) => {
-  console.log('what is the pool chart data', poolStatsArr)
-  console.log('what is the pool chart data', timeStampArr)
-
   const [endDate, setEndDate] = useState<DateType>(null)
   const [startDate, setStartDate] = useState<DateType>(null)
 

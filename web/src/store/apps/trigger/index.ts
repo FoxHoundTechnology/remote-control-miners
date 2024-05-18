@@ -38,7 +38,6 @@ export const CreateTrigger = createAsyncThunk('triggers/CreateTrigger', async (t
   }
 
   const response = await apiService.post('', triggerWithoutID)
-  console.log('response from CreateTrigger', response)
 
   return response.data
 })
@@ -50,7 +49,6 @@ export const UpdateTrigger = createAsyncThunk('triggers/UpdateTrigger', async (t
 })
 
 export const DeleteTrigger = createAsyncThunk('triggers/DeleteTrigger', async (triggerId: number) => {
-  console.log('triggerId from DeleteTrigger', triggerId)
   const response = await apiService
     .delete(``, {
       // NOTE: in delete request, the data is passed in the body with data key
