@@ -107,6 +107,8 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
     cacheTime: 0
   })
 
+  console.log('miner detail data in view: ', minerDetailsQuery.data)
+
   const minerStatsQuery = useQuery<MinerTimeSeriesDataResponse>(
     'minerStats',
     () => fetchMinerStats(macAddress, 24, 'h', 1, 'h'),
@@ -158,15 +160,13 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
       }
     }
 
-    console.log('time stamp array in useMeno', timestampArr)
-
     return {
       hashrateArr,
       tempSensorArr,
       fanSensorArr,
       timestampArr
     }
-  }, [minerStatsQuery.data, isLoading, isError])
+  }, [minerStatsQuery?.data, isLoading, isError])
 
   if (isLoading) {
     return <div>Loading...</div>
