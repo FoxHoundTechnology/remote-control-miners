@@ -34,20 +34,20 @@ type Miner struct {
 	Temperature Temperature `gorm:"type:VARCHAR(255)"`
 	Log         []MinerLog
 
-	FleetID uint
+	FleetID uint `gorm:"index:,option:CONCURRENTLY"`
 }
 
 type Pool struct {
 	gorm.Model
 	Pool    miner_domain.Pool `gorm:"embedded;"`
-	MinerID uint
+	MinerID uint              `gorm:"index:,option:CONCURRENTLY"`
 }
 
 type MinerLog struct {
 	gorm.Model
 	Log       miner_domain.Log       `gorm:"embedded;"`
 	EventType miner_domain.EventType `gorm:"comment: EventType: 0=Operational, 1=SystemIssue, 2=UserActivity"`
-	MinerID   uint
+	MinerID   uint                   `gorm:"index:,option:CONCURRENTLY"`
 }
 
 // ============== Scan/Values for Fan and Temp ==============

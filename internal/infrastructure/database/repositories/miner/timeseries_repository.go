@@ -22,11 +22,9 @@ import (
 // TODO: RW mutex
 
 type MinerTimeSeriesRepository struct {
-	db     timeseries_database.InfluxDBConnectionSettings
-	writer influxDB_api.WriteAPI
-
-	rw *sync.RWMutex
-
+	db                  timeseries_database.InfluxDBConnectionSettings
+	writer              influxDB_api.WriteAPI
+	rw                  *sync.RWMutex
 	timeseriesMinerData []MinerTimeSeries
 	timeseriesPoolData  []PoolTimeSeries
 }
@@ -34,17 +32,15 @@ type MinerTimeSeriesRepository struct {
 func NewMinerTimeSeriesRepository(db timeseries_database.InfluxDBConnectionSettings) *MinerTimeSeriesRepository {
 
 	return &MinerTimeSeriesRepository{
-		db: db,
-
-		writer: db.Client.WriteAPI(db.Org, db.Bucket),
-		rw:     new(sync.RWMutex),
-
+		db:                  db,
+		writer:              db.Client.WriteAPI(db.Org, db.Bucket),
+		rw:                  new(sync.RWMutex),
 		timeseriesMinerData: []MinerTimeSeries{},
 		timeseriesPoolData:  []PoolTimeSeries{},
 	}
 }
 
-func (r *MinerTimeSeriesRepository) WriteMinerData(mac_address string, data MinerTimeSeries) error {
+func (r *MinerTimeSeriesRepository) WriteMinerData(data MinerTimeSeries) error {
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
@@ -95,7 +91,7 @@ func (r *MinerTimeSeriesRepository) FlushMinerData() error {
 	return nil
 }
 
-func (r *MinerTimeSeriesRepository) WritePoolData(mac_address string, data PoolTimeSeries) error {
+func (r *MinerTimeSeriesRepository) WritePoolData(data PoolTimeSeries) error {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -140,6 +136,8 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 	windowUnit string,
 ) (MinerTimeSeriesResponse, error) {
 	queryAPI := r.db.Client.QueryAPI(r.db.Org)
+
+	// NOTE: missing data value will result in <nil>
 	query := fmt.Sprintf(`from(bucket: "%s")
 	|> range(start: -%d%s)
 	|> filter(fn: (r) => r._measurement == "miner_data" and r.mac_address == "%s")
@@ -178,9 +176,12 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 		case float64:
 			hashrate = int(v)
 		case string:
+			// NOTE: check the temp/fan data format/value
+			fmt.Println("sensor data v in miner detail", v)
 			sensorData = v
 		default:
-			fmt.Println("unknown type")
+			fmt.Println("unknown type in timeseries miner detail =>", v)
+			sensorData = "0"
 		}
 
 		switch fieldName {
@@ -188,12 +189,18 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 			minerData.HashRate = hashrate
 		case "temp_sensors":
 			temperatureStringArray := strings.Split(sensorData, ",")
+			fmt.Println("temp string array", temperatureStringArray)
+
 			temperatureSlice := make([]int, len(temperatureStringArray))
 
 			for index, temperatureString := range temperatureStringArray {
+
 				temperatureValue, err := strconv.Atoi(temperatureString)
+				fmt.Println("temperature string", temperatureString)
+
 				if err != nil {
 					fmt.Printf("error converting temperature value: %s\n", err)
+					fmt.Println("temperature value", temperatureValue)
 					temperatureSlice[index] = 0
 				} else {
 					temperatureSlice[index] = temperatureValue
@@ -209,8 +216,10 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 			fmt.Println("FAN STRING ARRAY", fanStringArray)
 			for index, fanString := range fanStringArray {
 				fanValue, err := strconv.Atoi(fanString)
+				fmt.Println("fan string", fanString)
 				if err != nil {
 					fmt.Printf("error converting fan value: %s\n", err)
+					fmt.Println("fan value", fanValue)
 					fanSlice[index] = 0
 				} else {
 					fanSlice[index] = fanValue
@@ -236,6 +245,7 @@ func (r *MinerTimeSeriesRepository) ReadMinerData(
 		minerTimeSeriesArray = append(minerTimeSeriesArray, *minerDataMapArray[timestamp])
 	}
 
+	fmt.Println("aggregated result of miner time series array", minerTimeSeriesArray)
 	return MinerTimeSeriesResponse{
 		Record:     minerTimeSeriesArray,
 		TimeStamps: timeStamps,
@@ -284,7 +294,8 @@ func (r *MinerTimeSeriesRepository) ReadPoolData(
 		case float64:
 			value = int(v)
 		default:
-			fmt.Println("unknown type")
+			fmt.Println("unknown type in timeseries pool data => ", v)
+			value = 0
 		}
 
 		poolData := poolDataMapArray[t]

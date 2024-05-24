@@ -127,9 +127,17 @@ func AntMinerCGIGetStats(username, password, ipAddress string) (*StatsResponse, 
 			Rate5s:    0,
 			RateUnit:  "GH/s",
 			Mode:      miner.SleepMode,
-			Chain:     []Chain{},
-			Fan:       []int{},
-			ChainNum:  0,
+			Chain: []Chain{
+				{
+					Index:   0,
+					TempPcb: []int{0},
+					// NOTE: fallback values for additional fields go here
+				},
+			},
+			Fan: []int{
+				0,
+			},
+			ChainNum: 0,
 		}, nil
 	}
 

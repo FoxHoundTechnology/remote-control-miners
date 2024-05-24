@@ -2,7 +2,6 @@ package routers
 
 import (
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +24,10 @@ import (
 
 type MinerDetailRequest struct {
 	MacAddress string `json:"mac_address"`
+}
+
+type FleetRequest struct {
+	FleetID uint `json:"fleet_id"`
 }
 
 type MinerControlRequest struct {
@@ -65,9 +68,32 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 				"message": "error fetching miners",
 				"data":    err,
 			})
+			return
 		}
 
-		ctx.Header("Cache-Control", "public, max-age="+strconv.Itoa(5))
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "successfully fetched miners",
+			"data":    miners,
+		})
+	})
+
+	router.GET("/api/miners/fleets", func(ctx *gin.Context) {
+
+		var fleetRequest FleetRequest
+		if err := ctx.ShouldBindJSON(&fleetRequest); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
+			return
+		}
+
+		minerRepository := miner_repo.NewMinerRepository(db)
+		miners, err := minerRepository.ListByFleetID(fleetRequest.FleetID)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error fetching miners",
+				"data":    err,
+			})
+			return
+		}
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "successfully fetched miners",

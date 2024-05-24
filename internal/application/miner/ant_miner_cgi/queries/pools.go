@@ -88,7 +88,5 @@ func AntMinerCGIGetPools(username, password, ipAddress string) ([]GetPoolsRespon
 		})
 	}
 
-	fmt.Println("pool stats in RAW CALL <<<<<<<-TEST->>>>>>>", pools)
-
 	return pools, nil
 }
