@@ -31,10 +31,13 @@ func Init() *gorm.DB {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
 		host, user, password, db_name, port)
 
-	postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		CreateBatchSize: 10000,
+	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+
 	fmt.Println("Successfully established the connection with the PostgreSQL database.")
 	return postgresDB
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // TODO: WithContext method with the logic of timeout cancellation
@@ -60,7 +61,7 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 */
 func (r *MinerRepository) ListByFleetID(fleetId uint) ([]*Miner, error) {
 	var miners []*Miner
-	// TODO: test preload
+	// TODO: Select statement
 	// TODO: test a different way of defining the query with struct
 	err := r.db.Where("fleet_id = ?", fleetId).Preload("Pools").Find(&miners).Error
 	if err != nil {
@@ -94,65 +95,70 @@ func (r *MinerRepository) BulkUpdateMinersWithPools(miners []*Miner) error {
 
 	fmt.Println("BulkUpdateMinersWithPools,", len(miners))
 
-	temp := &gorm.Session{
-		FullSaveAssociations: true,
-		// SkipDefaultTransaction: true,
-	}
+	// temp := &gorm.Session{
+	// 	// FullSaveAssociations: true,
+	// 	// SkipDefaultTransaction: true,
+	// }
 
 	// Start a transaction
-	tx := r.db.Session(temp).Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
+	// tx := r.db.Begin()
+	// if tx.Error != nil {
+	// 	return tx.Error
+	// }
 
 	// TODO: ideally with association,
 	// 	     only one transaction should go here
-	for _, miner := range miners {
+	// for _, miner := range miners {
 
-		// Update the miner
-		if err := tx.Save(&miner).Error; err != nil {
-			tx.Rollback()
-			return err
-		}
+	// Perform the bulk upsert operation within the transaction
+	// err := r.db.Clauses(clause.OnConflict{
+	// 	Columns:   []clause.Column{{Name: "id"}},
+	// 	DoUpdates: clause.AssignmentColumns([]string{"hash_rate"}),
+	// }).Create(&miners).Error
+	// if err != nil {
+	// 	fmt.Println("error", err)
+	// }
 
-		// db.Model(&person.Car).Update("Value", 9000)
-		// db.Model(&person).Updates(Person{Name: "Jinzhu 2"})
-
-		// db.Model(&person).Updates(map[string]interface{}{"Name": "Jinzhu 2"})
-
-		// for _, pool := range miner.Pools {
-		// 	// Check if the pool already exists
-		// 	existingPool := Pool{}
-		// 	err := tx.Where("miner_id = ? AND id = ?", miner.ID, pool.ID).First(&existingPool).Error
-
-		// 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// 		// If the pool doesn't exist, create a new one
-		// 		pool.MinerID = miner.ID
-		// 		if err := tx.Create(&pool).Error; err != nil {
-		// 			tx.Rollback()
-		// 			return err
-		// 		}
-
-		// 	} else if err == nil {
-		// 		// If the pool exists, update it
-		// 		existingPool.Pool = pool.Pool
-		// 		if err := tx.Save(&existingPool).Error; err != nil {
-		// 			tx.Rollback()
-		// 			return err
-		// 		}
-
-		// 	} else {
-		// 		tx.Rollback()
-		// 		return err
-
-		// 	}
-		// }
+	err := r.db.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&miners).Error
+	if err != nil {
+		fmt.Println("error", err)
 	}
+
+	// for _, pool := range miner.Pools {
+	// 	// Check if the pool already exists
+	// 	existingPool := Pool{}
+	// 	err := tx.Where("miner_id = ? AND id = ?", miner.ID, pool.ID).First(&existingPool).Error
+
+	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
+	// 		// If the pool doesn't exist, create a new one
+	// 		pool.MinerID = miner.ID
+	// 		if err := tx.Create(&pool).Error; err != nil {
+	// 			tx.Rollback()
+	// 			return err
+	// 		}
+
+	// 	} else if err == nil {
+	// 		// If the pool exists, update it
+	// 		existingPool.Pool = pool.Pool
+	// 		if err := tx.Save(&existingPool).Error; err != nil {
+	// 			tx.Rollback()
+	// 			return err
+	// 		}
+
+	// 	} else {
+	// 		tx.Rollback()
+	// 		return err
+
+	// 	}
+	// }
+	// }
 
 	// Commit the transaction
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
+	// if err := tx.Commit().Error; err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
