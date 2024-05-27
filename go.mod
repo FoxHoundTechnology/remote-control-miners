@@ -1,6 +1,8 @@
 module github.com/FoxHoundTechnology/remote-control-miners
 
-go 1.20
+go 1.21
+
+toolchain go1.22.2
 
 require (
 	github.com/alitto/pond v1.8.3
@@ -23,6 +25,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.20.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

@@ -66,6 +66,11 @@ func main() {
 		log.Fatalf("Failed to migrate the database: %v", err)
 	}
 
+	err = postgresDB.Exec(miner_repo.CreateUniqueMinerIndexSQL).Error
+	if err != nil {
+		log.Fatalf("Failed to create pgcrypto extension: %v", err)
+	}
+
 	configFile, err := os.Open("fxhnd.json")
 	if err != nil {
 		log.Fatalf("Failed to open file: %s", err)
@@ -491,7 +496,6 @@ func main() {
 					// register the new miner
 					if !found {
 						fmt.Println("New miner found!", updatedMiner)
-
 						newMiner := &miner_repo.Miner{
 							Miner: miner_domain.Miner{
 								IPAddress:  updatedMiner.Miner.IPAddress,
@@ -567,7 +571,6 @@ func main() {
 							},
 						)
 					}
-
 				}
 
 				fmt.Println("-------------- TIMESERIES DATABASE OPERATION START: fleet ", fleet.ID, "------------------")

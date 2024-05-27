@@ -1,5 +1,5 @@
 # Start from the official Golang base image version 1.20 on Alpine Linux
-FROM golang:1.20
+FROM golang:1.21
 
 # Environment variables which CompileDaemon requires to run
 ENV PROJECT_DIR=/app \

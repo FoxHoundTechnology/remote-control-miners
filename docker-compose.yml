@@ -39,6 +39,11 @@ services:
       - POSTGRES_DB=${DB_NAME}
       - DB_PORT=${DB_PORT}
       - DB_HOST=${DB_HOST}
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: '6g'
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
