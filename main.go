@@ -66,10 +66,20 @@ func main() {
 		log.Fatalf("Failed to migrate the database: %v", err)
 	}
 
-	err = postgresDB.Exec(miner_repo.CreateUniqueMinerIndexSQL).Error
-	if err != nil {
-		log.Fatalf("Failed to create pgcrypto extension: %v", err)
-	}
+	// dbConnectionSetting, err := postgresDB.DB()
+	// if err != nil {
+	// 	log.Fatalf("Failed to get the database connection: %v", err)
+	// }
+
+	// dbConnectionSetting.SetMaxIdleConns(30)
+	// dbConnectionSetting.SetMaxOpenConns(60)
+	// dbConnectionSetting.SetConnMaxLifetime(time.Hour)
+
+	// // TODO: refactor unique contraint logic
+	// err = postgresDB.Exec(miner_repo.CreateUniqueMinerIndexSQL).Error
+	// if err != nil {
+	// 	fmt.Println("Error creating unique index for miners", err)
+	// }
 
 	configFile, err := os.Open("fxhnd.json")
 	if err != nil {
@@ -106,13 +116,19 @@ func main() {
 		log.Println("worker paniced %v", p)
 	}
 
-	pool := pond.New(100, 10, pond.PanicHandler(panicHandler))
+	pool := pond.New(
+		200,
+		100,
+		pond.PanicHandler(panicHandler),
+		pond.Strategy(pond.Lazy()),
+		pond.MinWorkers(29),
+	)
 	defer pool.StopAndWait()
 
 	workerErrors := make(chan error)
 	defer close(workerErrors)
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(300 * time.Second)
 	defer ticker.Stop()
 
 	// Create a context that can be cancelled
@@ -131,9 +147,21 @@ func main() {
 
 		for _, fleet := range fleets {
 			fleet := fleet
-
 			pool.Submit(func() {
-				log.Println("=========================")
+				log.Println("===========current pool worker #==============", pool.RunningWorkers())
+
+				fmt.Println("Worker Pool Metrics:")
+				fmt.Printf("Running Workers: %d\n", pool.RunningWorkers())
+				fmt.Printf("Idle Workers: %d\n", pool.IdleWorkers())
+				fmt.Printf("Min Workers: %d\n", pool.MinWorkers())
+				fmt.Printf("Max Workers: %d\n", pool.MaxWorkers())
+				fmt.Printf("Max Capacity: %d\n", pool.MaxCapacity())
+				fmt.Printf("Submitted Tasks: %d\n", pool.SubmittedTasks())
+				fmt.Printf("Waiting Tasks: %d\n", pool.WaitingTasks())
+				fmt.Printf("Successful Tasks: %d\n", pool.SuccessfulTasks())
+				fmt.Printf("Failed Tasks: %d\n", pool.FailedTasks())
+				fmt.Printf("Completed Tasks: %d\n", pool.CompletedTasks())
+
 				log.Printf("Processing scanner ID: %d\n", fleet.ID)
 				log.Println("fleet start ip", fleet.Scanner.Scanner.StartIP)
 				log.Println("fleet end ip", fleet.Scanner.Scanner.EndIP)
@@ -406,6 +434,7 @@ func main() {
 				}
 
 				var updatedMiners []*miner_repo.Miner
+				var newMiners []*miner_repo.Miner
 
 				fmt.Println("-------------- fleet ", fleet.ID, "------------------")
 				fmt.Println("Miners in the fleet", existingMiners)
@@ -430,14 +459,10 @@ func main() {
 								existingMiner.Stats.RateIdeal = updatedMiner.Stats.RateIdeal
 								existingMiner.FleetID = fleet.ID
 
-								fmt.Println("fan updating for new miner")
 								existingMiner.Fan = make([]int, len(updatedMiner.Fan))
 								for i, fan := range updatedMiner.Fan {
 									existingMiner.Fan[i] = fan.Speed
 								}
-								fmt.Println("fan updated for new miner", existingMiner.Fan)
-
-								fmt.Println("temp updating for new miner")
 
 								existingMiner.Temperature = make([]int, len(updatedMiner.Temperature))
 								for i, temperature := range updatedMiner.Temperature {
@@ -449,10 +474,8 @@ func main() {
 									}
 									existingMiner.Temperature[i] = max
 								}
-								fmt.Println("temp updated for new miner", existingMiner.Temperature)
 
 								// NOTE: avoid out of index error
-								fmt.Println("pool updating for new miner")
 								if updatedMiner.Pools != nil {
 									existingMiner.Pools = make([]miner_repo.Pool, len(updatedMiner.Pools))
 									for i, pool := range updatedMiner.Pools {
@@ -467,7 +490,6 @@ func main() {
 										}
 									}
 								}
-								fmt.Println("pool updated for new miner", existingMiner.Pools)
 
 								updatedMiners = append(updatedMiners, existingMiner)
 								minerTimeSeriesRepository.WriteMinerData(
@@ -495,7 +517,6 @@ func main() {
 
 					// register the new miner
 					if !found {
-						fmt.Println("New miner found!", updatedMiner)
 						newMiner := &miner_repo.Miner{
 							Miner: miner_domain.Miner{
 								IPAddress:  updatedMiner.Miner.IPAddress,
@@ -550,7 +571,10 @@ func main() {
 							}
 						}
 
-						updatedMiners = append(updatedMiners, newMiner)
+						// TODO!
+						// UNDO this later
+						// updatedMiners = append(updatedMiners, newMiner)
+						newMiners = append(newMiners, newMiner)
 
 						// timeseries updates
 						minerTimeSeriesRepository.WriteMinerData(
@@ -575,17 +599,23 @@ func main() {
 
 				fmt.Println("-------------- TIMESERIES DATABASE OPERATION START: fleet ", fleet.ID, "------------------")
 				fmt.Println("up dated miners --->>> ", updatedMiners)
+				fmt.Println("new miners --->>> ", newMiners)
 
-				minerTimeSeriesRepository.FlushMinerData()
-				minerTimeSeriesRepository.FlushPoolData()
+				go func() {
+					minerTimeSeriesRepository.FlushMinerData()
+					minerTimeSeriesRepository.FlushPoolData()
+				}()
 
-				minerRepository.BulkUpdateMinersWithPools(updatedMiners)
+				minerRepository.CreateMinersInBatch(newMiners)
+				minerRepository.UpdateMinersInBatch(updatedMiners)
 				// trying to find the miner in the existingMiners from the database
 				fmt.Println("-------------- DATABASE OPERATION START: fleet ", fleet.ID, "------------------")
 				fmt.Println("-------------- DATABASE OPERATION END: fleet ", fleet.ID, "------------------")
 				fmt.Println("========================END OF WORKER=========================", fleet.Name)
-			})
+			}) // end of pool submit
+
 		}
+
 	}
 }
 

@@ -13,10 +13,10 @@ import (
 
 // TODO: cascade for log
 // TODO: vendor model name
-
 const (
 	CreateUniqueMinerIndexSQL = `
-    CREATE UNIQUE INDEX idx_miners_mac_fleet ON miners (mac_address, fleet_id);
+	ALTER TABLE public.miners
+	ADD CONSTRAINT unique_mac_address UNIQUE (mac_address);
     `
 )
 

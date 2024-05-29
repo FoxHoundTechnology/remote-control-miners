@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"gorm.io/gorm"
 )
@@ -90,115 +89,63 @@ func (r *MinerRepository) List() ([]*Miner, error) {
 	return miners, err
 }
 
-// TODO!: separate createInBatches and updateInBatches
-// TODO: R&D for association bulk update
-func (r *MinerRepository) BulkUpdateMinersWithPools(miners []*Miner) error {
-
-	fmt.Println("BulkUpdateMinersWithPools,", len(miners))
+func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
 
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return tx.Error
 	}
 
-	// Construct the bulk upsert query
-	var valueStrings []string
-	var valueArgs []interface{}
-
 	for _, miner := range miners {
-		valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-		valueArgs = append(valueArgs, miner.Miner.MacAddress, miner.Miner.IPAddress, miner.Stats.HashRate, miner.Stats.RateIdeal, miner.Stats.Uptime, miner.Config.Username, miner.Config.Password, miner.Config.Firmware, miner.MinerType, miner.ModelName, miner.Mode, miner.Status, miner.Fan, miner.Temperature, miner.FleetID)
+
+		// TODO! ideally insert on conclict operation
+		if err := tx.Save(&miner).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error saving miner: %w", err)
+		}
+
+		// Save related Pools
+		for _, pool := range miner.Pools {
+			pool.MinerID = miner.ID // Ensure foreign key is set
+			if err := tx.Save(&pool).Error; err != nil {
+				tx.Rollback()
+				return fmt.Errorf("error saving pool: %w", err)
+			}
+		}
 	}
 
-	query := fmt.Sprintf(`
-		INSERT INTO miners (mac_address, ip_address, hash_rate, rate_ideal, uptime, username, password, firmware, miner_type,
-		model_name, mode, status, fan, temperature, fleet_id)
-		VALUES %s
-		ON CONFLICT (mac_address) DO UPDATE 
-		SET 
-		ip_address = EXCLUDED.ip_address,
-		hash_rate = EXCLUDED.hash_rate,
-		rate_ideal = EXCLUDED.rate_ideal,
-		uptime = EXCLUDED.uptime,
-		username = EXCLUDED.username,
-		password = EXCLUDED.password,
-		firmware = EXCLUDED.firmware,
-		miner_type = EXCLUDED.miner_type,
-		model_name = EXCLUDED.model_name,
-		mode = EXCLUDED.mode,
-		status = EXCLUDED.status,
-		fan = EXCLUDED.fan,
-		temperature = EXCLUDED.temperature;
-	`, strings.Join(valueStrings, ","))
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("error committing transaction: %w", err)
+	}
+	return nil
+}
 
-	if err := tx.Exec(query, valueArgs...).Error; err != nil {
-		tx.Rollback()
-		return fmt.Errorf("error upserting miners: %w", err)
+// TODO!: separate createInBatches and updateInBatches
+// TODO: R&D for association bulk update
+func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
+
+	fmt.Println("BulkUpdateMinersWithPools,", len(miners))
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	// TODO: Add mac address condition too
+	// TODO: remove where clause and Model
+	// TODO: remove the pool?
+
+	for _, miner := range miners {
+		if err := tx.Omit("pools").
+			// Where("fleet_id = ?", miner.FleetID).
+			Save(miner).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error updating miners: %w", err)
+		}
 	}
 
 	if err := tx.Commit().Error; err != nil {
 		return err
 	}
-
-	// TODO: ideally raw sql with onconclict,
-	// 	     only one transaction should go here
-	// if len(miners) == 0 {
-	// 	fmt.Println("No miners to update")
-	// 	return nil
-	// }
-
-	// shardTable := fmt.Sprintf("miners_%02d", miners[0].FleetID)
-	// var valueStrings []string
-	// var valueArgs []interface{}
-
-	// for _, miner := range miners {
-	// 	valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?)")
-	// 	valueArgs = append(valueArgs, miner.ID, miner.Stats.HashRate, miner.MinerType, miner.ModelName, miner.Mode, miner.Status, miner.FleetID)
-	// }
-
-	// query := fmt.Sprintf(`
-	// 	INSERT INTO %s (id, hash_rate, miner_type, model_name, mode, status, fleet_id)
-	// 	VALUES %s
-	// 	ON CONFLICT (id) DO UPDATE
-	// 	SET hash_rate = EXCLUDED.hash_rate,
-	// 		miner_type = EXCLUDED.miner_type,
-	// 		model_name = EXCLUDED.model_name,
-	// 		mode = EXCLUDED.mode,
-	// 		status = EXCLUDED.status;
-	// `, shardTable, strings.Join(valueStrings, ","))
-
-	// if err := tx.Exec(query, valueArgs...).Error; err != nil {
-	// 	return fmt.Errorf("error upserting miners: %w", err)
-	// }
-
-	// for _, pool := range miner.Pools {
-	// 	// Check if the pool already exists
-	// 	existingPool := Pool{}
-	// 	err := tx.Where("miner_id = ? AND id = ?", miner.ID, pool.ID).First(&existingPool).Error
-
-	// 	if errors.Is(err, gorm.ErrRecordNotFound) {
-	// 		// If the pool doesn't exist, create a new one
-	// 		pool.MinerID = miner.ID
-	// 		if err := tx.Create(&pool).Error; err != nil {
-	// 			tx.Rollback()
-	// 			return err
-	// 		}
-
-	// 	} else if err == nil {
-	// 		// If the pool exists, update it
-	// 		existingPool.Pool = pool.Pool
-	// 		if err := tx.Save(&existingPool).Error; err != nil {
-	// 			tx.Rollback()
-	// 			return err
-	// 		}
-
-	// 	} else {
-	// 		tx.Rollback()
-	// 		return err
-
-	// 	}
-	// }
-	// }
 
 	return nil
 }
