@@ -100,7 +100,6 @@ func main() {
 	routes.RegisterScannerRoutes(postgresDB, router)
 	routes.RegisterMinerTimeSeriesRoutes(router)
 
-	// Start the router on a separate goroutine
 	go func() {
 		if err := router.Run(); err != nil {
 			log.Printf("Failed to start router: %v", err)
@@ -185,14 +184,11 @@ func main() {
 					}
 				}
 
-				// 1, ARP request
 				ARPResponses := make(chan *ant_miner_cgi_service.AntminerCGI, len(ips))
 				var wg sync.WaitGroup
 				for i, ip := range ips {
 					wg.Add(1)
-
 					go func(i int, ip net.IP) {
-						// 2, make a channel for each miner, which can be reused by the pipeline pattern
 						defer wg.Done()
 
 						t := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
@@ -425,7 +421,6 @@ func main() {
 					wgAlert.Wait()
 				} // end of the case for alertFlag = true
 
-				// A, retrieve the list of miners from table
 				minerRepository := miner_repo.NewMinerRepository(postgresDB)
 				existingMiners, err := minerRepository.ListByFleetID(fleet.ID)
 				if err != nil {
@@ -571,9 +566,6 @@ func main() {
 							}
 						}
 
-						// TODO!
-						// UNDO this later
-						// updatedMiners = append(updatedMiners, newMiner)
 						newMiners = append(newMiners, newMiner)
 
 						// timeseries updates
@@ -608,9 +600,7 @@ func main() {
 
 				minerRepository.CreateMinersInBatch(newMiners)
 				minerRepository.UpdateMinersInBatch(updatedMiners)
-				// trying to find the miner in the existingMiners from the database
-				fmt.Println("-------------- DATABASE OPERATION START: fleet ", fleet.ID, "------------------")
-				fmt.Println("-------------- DATABASE OPERATION END: fleet ", fleet.ID, "------------------")
+
 				fmt.Println("========================END OF WORKER=========================", fleet.Name)
 			}) // end of pool submit
 
