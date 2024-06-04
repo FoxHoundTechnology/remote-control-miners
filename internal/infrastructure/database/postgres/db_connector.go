@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // TODO: Logger
@@ -28,13 +30,36 @@ func Init() *gorm.DB {
 	password := os.Getenv("DB_PASSWORD")
 	db_name := os.Getenv("DB_NAME")
 
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+			SlowThreshold: time.Second, // Slow SQL threshold
+			LogLevel:      logger.Info, // Log level
+			Colorful:      true,        // Disable color
+		},
+	)
+
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
 		host, user, password, db_name, port)
 
-	postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// newLogger := logger.New(
+	// 	log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+	// 	logger.Config{
+	// 		SlowThreshold:             45 * time.Second, // Slow SQL threshold
+	// 		LogLevel:                  logger.Silent,    // Log level
+	// 		IgnoreRecordNotFoundError: false,            // Ignore ErrRecordNotFound error for logger
+	// 		ParameterizedQueries:      true,             // Don't include params in the SQL log
+	// 		Colorful:                  true,             // Disable color
+	// 	},
+	// )
+
+	postgresDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+
 	fmt.Println("Successfully established the connection with the PostgreSQL database.")
 	return postgresDB
 }

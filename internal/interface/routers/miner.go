@@ -2,7 +2,6 @@ package routers
 
 import (
 	"net/http"
-	"strconv"
 	"sync"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +26,10 @@ type MinerDetailRequest struct {
 	MacAddress string `json:"mac_address"`
 }
 
+type FleetRequest struct {
+	FleetID uint `json:"fleet_id"`
+}
+
 type MinerControlRequest struct {
 	MacAddresses []string             `json:"mac_addresses"`
 	Command      miner_domain.Command `json:"command"`
@@ -34,7 +37,7 @@ type MinerControlRequest struct {
 
 func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 
-	router.POST("/miners/detail", func(ctx *gin.Context) {
+	router.POST("/api/miners/detail", func(ctx *gin.Context) {
 		var minerDetailRequest MinerDetailRequest
 		if err := ctx.ShouldBindJSON(&minerDetailRequest); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
@@ -57,7 +60,7 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 		})
 	})
 
-	router.GET("/miners/list", func(ctx *gin.Context) {
+	router.GET("/api/miners/list", func(ctx *gin.Context) {
 		minerRepository := miner_repo.NewMinerRepository(db)
 		miners, err := minerRepository.List()
 		if err != nil {
@@ -65,9 +68,8 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 				"message": "error fetching miners",
 				"data":    err,
 			})
+			return
 		}
-
-		ctx.Header("Cache-Control", "public, max-age="+strconv.Itoa(5))
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "successfully fetched miners",
@@ -75,7 +77,31 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 		})
 	})
 
-	router.POST("/miners/control", func(ctx *gin.Context) {
+	router.GET("/api/miners/fleets", func(ctx *gin.Context) {
+
+		var fleetRequest FleetRequest
+		if err := ctx.ShouldBindJSON(&fleetRequest); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
+			return
+		}
+
+		minerRepository := miner_repo.NewMinerRepository(db)
+		miners, err := minerRepository.ListByFleetID(fleetRequest.FleetID)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error fetching miners",
+				"data":    err,
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "successfully fetched miners",
+			"data":    miners,
+		})
+	})
+
+	router.POST("/api/miners/control", func(ctx *gin.Context) {
 
 		var minerControlRequest MinerControlRequest
 		if err := ctx.ShouldBindJSON(&minerControlRequest); err != nil {

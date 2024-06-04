@@ -199,8 +199,6 @@ func (a *AntminerCGI) CheckPools() error {
 	a.rwMutex.Lock()
 	defer a.rwMutex.Unlock()
 
-	fmt.Println("pool elements before for loop in CheckPools :", GetPoolsResponse)
-
 	a.Pools = make([]domain.Pool, len(GetPoolsResponse))
 
 	for index, pool := range GetPoolsResponse {
@@ -211,8 +209,6 @@ func (a *AntminerCGI) CheckPools() error {
 			Stale:    pool.Stale,
 		}
 	}
-
-	fmt.Println("a.Pools element after for loop in checkpools", a.Pools)
 
 	return nil
 }
