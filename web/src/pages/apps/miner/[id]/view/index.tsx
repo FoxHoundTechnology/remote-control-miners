@@ -262,10 +262,6 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', mb: 2 }}>
-                    <Typography sx={{ mr: 2, fontWeight: 500, fontSize: '0.875rem' }}>IP Range:</Typography>
-                    <Typography variant='body2'>{minerDetailsQuery?.data?.ip}</Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', mb: 2 }}>
                     <Typography sx={{ mr: 2, fontWeight: 500, fontSize: '0.875rem' }}>Last Updated:</Typography>
                     <Typography variant='body2'>
                       {convertToRegularDateAndTime(minerDetailsQuery?.data?.lastUpdated)}

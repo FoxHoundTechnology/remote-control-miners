@@ -138,12 +138,6 @@ const RowOptions = ({ row }: any) => {
           <Icon icon='mdi:eye-outline' fontSize={20} />
           View
         </MenuItem>
-        {/* 
-        <MenuItem disabled onClick={handleRowOptionsClose} sx={{ '& svg': { mr: 2 } }}>
-          <Icon icon='mdi:pencil-outline' fontSize={20} />
-          Edit
-        </MenuItem>
-         */}
         <MenuItem onClick={handleReboot} sx={{ '& svg': { mr: 2 } }}>
           <Icon icon='mdi:restart' fontSize={20} />
           Reboot
@@ -152,9 +146,6 @@ const RowOptions = ({ row }: any) => {
           <Icon icon='mdi:pause-circle-outline' fontSize={20} />
           Sleep
         </MenuItem>
-        {/*
-                delete function should have the modal component 
-        */}
         {row?.status === 'disabled' || row?.status === 'unracked' ? (
           <MenuItem onClick={handleReactivate} sx={{ '& svg': { mr: 2 } }}>
             <Icon icon='mdi:restart' fontSize={20} />
@@ -182,10 +173,10 @@ const columns: GridColDef[] = [
     flex: 0.2,
     minWidth: 180,
     maxWidth: 180,
-    field: 'macAddress', // and macaddress
+    field: 'macAddress',
 
     renderCell: ({ row }: CellType) => {
-      const { minerType, model, macAddress, ip } = row
+      const { model, macAddress, ip } = row
 
       // TODO: add the ip on hover
       return (
@@ -226,11 +217,6 @@ const columns: GridColDef[] = [
     renderCell: ({ row }: CellType) => {
       // TODO: fix the status
       const { status } = row
-      // Okay
-      // Failed => offline,
-      // Warning => Missing Hashboard,
-      // Disabled
-      // N/A
       return (
         <Tooltip title={''}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -253,7 +239,6 @@ const columns: GridColDef[] = [
     headerName: 'Mode',
     renderCell: ({ row }: CellType) => {
       // online, offline, lowpower, sleep, reboot, disable, warning
-
       return (
         <CustomChip
           skin='light'
@@ -392,7 +377,7 @@ const MinerList = () => {
   const [value, setValue] = useState<string>('')
 
   // WIP:  add the modal config UI
-  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 10 })
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 50 })
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
   const [openFilter, setOpenFilter] = useState<boolean>(false)
 

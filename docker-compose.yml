@@ -22,16 +22,16 @@ services:
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
 
-      - GOMAXPROCS=5 # Set the number of CPU cores for the Go application
+      - GOMAXPROCS=7 # Set the number of CPU cores for the Go application
 
     deploy:
       resources:
         limits:
-          cpus: '5.0' # Maximum 2 CPU cores for the Go server
+          cpus: '7.0' # Maximum 2 CPU cores for the Go server
           memory: '6g' # Maximum 4GB of memory for the Go server
         reservations:
-          cpus: '5.0' # Reserve at least 1 CPU core for the Go server
-          memory: '4g' # Reserve at least 2GB of memory for the Go server
+          cpus: '7.0' # Reserve at least 1 CPU core for the Go server
+          memory: '6g' # Reserve at least 2GB of memory for the Go server
     ports:
       - 8080:8080
     depends_on:
@@ -42,7 +42,7 @@ services:
     container_name: postgres
     image: postgres:13
     restart: always
-    command: postgres -c 'max_connections=100000'
+    command: postgres -c 'max_connections=20000'
     env_file:
       - .env
     environment:
@@ -54,8 +54,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '5'
-          memory: '5g'
+          cpus: '3.5'
+          memory: '4g'
     # next
     # ulimits:
     #   nofile:
@@ -63,6 +63,7 @@ services:
     #     hard: 100000 # Increase the hard limit
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - 5432:5432
 
