@@ -52,12 +52,6 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 	return miner.ID, nil
 }
 
-// [ ]
-// JOIN with miner config
-/*
-	Struct db.Find(&users, User{Age: 20})
-	SELECT * FROM users WHERE age = 20;
-*/
 func (r *MinerRepository) ListByFleetID(fleetId uint) ([]*Miner, error) {
 	var miners []*Miner
 	// TODO: Select statement
@@ -132,11 +126,9 @@ func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 
 	// TODO: Add mac address condition too
 	// TODO: remove where clause and Model
-	// TODO: remove the pool?
 
 	for _, miner := range miners {
-		if err := tx.Omit("pools").
-			// Where("fleet_id = ?", miner.FleetID).
+		if err := tx.Omit("Pools").
 			Save(miner).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("error updating miners: %w", err)
