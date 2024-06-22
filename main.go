@@ -234,21 +234,21 @@ func main() {
 						if err != nil {
 							log.Printf("Error checking stats: %v", err)
 							workerErrors <- err
-							return
+							//	return
 						}
 
 						err = antMinerCGI.CheckPools()
 						if err != nil {
 							log.Printf("Error checking pools: %v", err)
 							workerErrors <- err
-							return
+							//return
 						}
 
 						err = antMinerCGI.CheckConfig()
 						if err != nil {
 							log.Printf("Error checking config: %v", err)
 							workerErrors <- err
-							return
+							//return
 						}
 
 						log.Println("time now:", time.Now())
