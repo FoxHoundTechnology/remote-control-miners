@@ -135,7 +135,12 @@ func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 
 	for _, miner := range miners {
 		// TODO! ideally insert on conclict operation
-		if err := tx.Omit("Pools").Save(&miner).Error; err != nil {
+		conditions := map[string]interface{}{
+			"mac_address": miner.Miner.MacAddress,
+			"fleet_id":    miner.FleetID,
+		}
+
+		if err := tx.Omit("Pools").Where(conditions).Save(&miner).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("error saving miner: %w", err)
 		}
