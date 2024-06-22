@@ -106,7 +106,6 @@ func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
 	return nil
 }
 
-// TODO!: FIXME
 func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 
 	// Construct the bulk upsert query

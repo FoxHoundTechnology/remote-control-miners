@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alitto/pond"
+	// "github.com/alitto/pond"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
@@ -119,18 +119,18 @@ func main() {
 	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
 	// minerTimeSeriesRepository := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
 
-	panicHandler := func(p interface{}) {
-		log.Println("worker paniced %v", p)
-	}
+	// panicHandler := func(p interface{}) {
+	// 	log.Println("worker paniced %v", p)
+	// }
 
-	pool := pond.New(
-		200,
-		100,
-		pond.PanicHandler(panicHandler),
-		pond.Strategy(pond.Eager()),
-		pond.MinWorkers(29),
-	)
-	defer pool.StopAndWait()
+	// pool := pond.New(
+	// 	200,
+	// 	100,
+	// 	pond.PanicHandler(panicHandler),
+	// 	pond.Strategy(pond.Eager()),
+	// 	pond.MinWorkers(29),
+	// )
+	// defer pool.StopAndWait()
 
 	workerErrors := make(chan error)
 	defer close(workerErrors)
@@ -153,7 +153,10 @@ func main() {
 		}
 
 		for _, fleet := range fleets {
+
 			fleet := fleet
+			time.Sleep(500 * time.Millisecond) // Adjust the duration as needed
+
 			go func(fleetModel fleet_repo.Fleet) {
 				log.Printf("Processing scanner ID: %d\n", fleet.ID)
 				log.Println("fleet start ip", fleet.Scanner.Scanner.StartIP)
