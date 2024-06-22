@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -91,20 +93,10 @@ func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
 	}
 
 	for _, miner := range miners {
-
 		// TODO! ideally insert on conclict operation
 		if err := tx.Save(&miner).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("error saving miner: %w", err)
-		}
-
-		// Save related Pools
-		for _, pool := range miner.Pools {
-			pool.MinerID = miner.ID // Ensure foreign key is set
-			if err := tx.Save(&pool).Error; err != nil {
-				tx.Rollback()
-				return fmt.Errorf("error saving pool: %w", err)
-			}
 		}
 	}
 
@@ -118,21 +110,36 @@ func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
 // TODO: R&D for association bulk update
 func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 
+	// Construct the bulk upsert query
+	valueStrings := make([]string, 0, len(miners))
+	values := make([]interface{}, 0, len(miners)*5)
+	for _, miner := range miners {
+		valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?)")
+		miner.UpdatedAt = time.Now()
+		values = append(values, miner.Stats.HashRate, miner.Miner.MacAddress, miner.Miner.IPAddress, miner.FleetID, miner.UpdatedAt)
+	}
+
+	query := `
+		INSERT INTO miners (hash_rate, mac_address, ip_address, fleet_id, updated_at)
+		VALUES ` + strings.Join(valueStrings, ",") + `
+		ON CONFLICT (mac_address, fleet_id) DO UPDATE 
+		SET 
+			hash_rate = EXCLUDED.hash_rate,
+			mac_address = EXCLUDED.mac_address,
+			ip_address = EXCLUDED.ip_address, 
+			fleet_id = EXCLUDED.fleet_id,
+			updated_at = EXCLUDED.updated_at;
+	`
+
 	fmt.Println("BulkUpdateMinersWithPools,", len(miners))
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return tx.Error
 	}
 
-	// TODO: Add mac address condition too
-	// TODO: remove where clause and Model
-
-	for _, miner := range miners {
-		if err := tx.Omit("Pools").
-			Save(miner).Error; err != nil {
-			tx.Rollback()
-			return fmt.Errorf("error updating miners: %w", err)
-		}
+	if err := tx.Exec(query, values...).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error updating miners: %w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {

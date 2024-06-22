@@ -15,8 +15,7 @@ import (
 // TODO: vendor model name
 const (
 	CreateUniqueMinerIndexSQL = `
-	ALTER TABLE public.miners
-	ADD CONSTRAINT unique_mac_address UNIQUE (mac_address);
+	CREATE UNIQUE INDEX idx_mac_address_fleet_id ON miners (mac_address, fleet_id);
     `
 )
 
@@ -25,7 +24,7 @@ type Temperature []int
 
 type Miner struct {
 	gorm.Model
-	Miner  miner_domain.Miner  `gorm:"embedded"`
+	Miner  miner_domain.Miner  `gorm:"embedded"` // NOTE: MacAddress unique-indexed
 	Stats  miner_domain.Stats  `gorm:"embedded"`
 	Config miner_domain.Config `gorm:"embedded"`
 
