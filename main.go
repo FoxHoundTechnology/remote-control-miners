@@ -327,8 +327,8 @@ func main() {
 					minerModelArr = append(minerModelArr, antMinerCGI)
 				}
 
-				// minerRepository.UpdateMinersInBatch(minerModelArr)
-				minerRepository.CreateMinersInBatch(minerModelArr)
+				minerRepository.UpdateMinersInBatch(minerModelArr)
+				// minerRepository.CreateMinersInBatch(minerModelArr)
 
 				fmt.Println("========================END OF WORKER=========================", fleet.Name)
 			}(fleet)
