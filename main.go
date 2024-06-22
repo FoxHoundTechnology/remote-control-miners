@@ -315,10 +315,8 @@ func main() {
 					}(i, ip)
 				} // end of the ARP request
 
-				go func() {
-					wg.Wait()
-					close(antMinerCGIModel)
-				}()
+				wg.Wait()
+				close(antMinerCGIModel)
 
 				log.Println("length is ", len(antMinerCGIModel))
 
