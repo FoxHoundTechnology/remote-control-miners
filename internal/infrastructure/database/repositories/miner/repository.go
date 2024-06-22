@@ -94,7 +94,7 @@ func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
 
 	for _, miner := range miners {
 		// TODO! ideally insert on conclict operation
-		if err := tx.Save(&miner).Error; err != nil {
+		if err := tx.Omit("Pools").Save(&miner).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("error saving miner: %w", err)
 		}
@@ -106,8 +106,7 @@ func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
 	return nil
 }
 
-// TODO!: separate createInBatches and updateInBatches
-// TODO: R&D for association bulk update
+// TODO!: FIXME
 func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 
 	// Construct the bulk upsert query
