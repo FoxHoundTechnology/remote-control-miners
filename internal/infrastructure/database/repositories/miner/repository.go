@@ -133,6 +133,15 @@ func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 		return tx.Error
 	}
 
+	/*
+		for _, miner := range miners {
+		    if err := db.Omit("Pools").Model(&miner).Where("mac_address = ? AND other_field = ?", miner.MACAddress, miner.OtherField).Updates(miner).Error; err != nil {
+		        return fmt.Errorf("error updating miner: %w", err)
+		    }
+		}
+
+	*/
+
 	for _, miner := range miners {
 		// TODO! ideally insert on conclict operation
 		conditions := map[string]interface{}{

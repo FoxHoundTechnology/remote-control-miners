@@ -251,12 +251,6 @@ func main() {
 							//return
 						}
 
-						log.Println("time now:", time.Now())
-						log.Println("ARP Response:", antMinerCGI.Miner)
-						log.Println("Stats:", antMinerCGI.Stats)
-						log.Println("Pools:", antMinerCGI.Pools)
-						log.Println("Config:", antMinerCGI.Config)
-
 						newMinerModel := &miner_repo.Miner{
 							Miner: miner_domain.Miner{
 								IPAddress:  antMinerCGI.Miner.IPAddress,
