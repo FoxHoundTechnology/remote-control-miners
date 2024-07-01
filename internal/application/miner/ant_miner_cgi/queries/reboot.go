@@ -38,10 +38,6 @@ func AntMinerCGIReboot(clientConnection *http_auth.DigestTransport, username, pa
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"body":  body,
-		}).Debug("Error reading response body")
 		return err
 	}
 
