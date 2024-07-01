@@ -181,7 +181,7 @@ func main() {
 					}
 				}
 
-				minerRepository := miner_repo.NewMinerRepository(postgresDB)
+				// minerRepository := miner_repo.NewMinerRepository(postgresDB)
 				antMinerCGIModel := make(chan *miner_repo.Miner, len(ips))
 				var wg sync.WaitGroup
 
@@ -319,7 +319,7 @@ func main() {
 					minerModelArr = append(minerModelArr, antMinerCGI)
 				}
 
-				minerRepository.UpdateMinersInBatch(minerModelArr)
+				// minerRepository.UpdateMinersInBatch(minerModelArr)
 				// minerRepository.CreateMinersInBatch(minerModelArr)
 
 				fmt.Println("========================END OF WORKER=========================", fleet.Name)
