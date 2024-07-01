@@ -13,7 +13,7 @@ import (
 
 // cgi-bin/reboot.cgi: Reboot the miner.
 
-func AntMinerCGIReboot(username, password, ipAddress string) error {
+func AntMinerCGIReboot(clientConnection *http_auth.DigestTransport, username, password, ipAddress string) error {
 
 	t := http_auth.NewTransport(username, password)
 
@@ -38,10 +38,6 @@ func AntMinerCGIReboot(username, password, ipAddress string) error {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"body":  body,
-		}).Debug("Error reading response body")
 		return err
 	}
 

@@ -13,13 +13,18 @@ import (
 
 // TODO: cascade for log
 // TODO: vendor model name
+const (
+	CreateUniqueMinerIndexSQL = `
+	CREATE UNIQUE INDEX idx_mac_address_fleet_id ON miners (mac_address, fleet_id);
+    `
+)
 
 type Fan []int
 type Temperature []int
 
 type Miner struct {
 	gorm.Model
-	Miner  miner_domain.Miner  `gorm:"embedded"`
+	Miner  miner_domain.Miner  `gorm:"embedded"` // NOTE: MacAddress unique-indexed
 	Stats  miner_domain.Stats  `gorm:"embedded"`
 	Config miner_domain.Config `gorm:"embedded"`
 
@@ -34,20 +39,20 @@ type Miner struct {
 	Temperature Temperature `gorm:"type:VARCHAR(255)"`
 	Log         []MinerLog
 
-	FleetID uint
+	FleetID uint `gorm:"index"`
 }
 
 type Pool struct {
 	gorm.Model
 	Pool    miner_domain.Pool `gorm:"embedded;"`
-	MinerID uint
+	MinerID uint              `gorm:"index"`
 }
 
 type MinerLog struct {
 	gorm.Model
 	Log       miner_domain.Log       `gorm:"embedded;"`
 	EventType miner_domain.EventType `gorm:"comment: EventType: 0=Operational, 1=SystemIssue, 2=UserActivity"`
-	MinerID   uint
+	MinerID   uint                   `gorm:"index"`
 }
 
 // ============== Scan/Values for Fan and Temp ==============

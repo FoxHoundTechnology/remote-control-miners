@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -43,9 +44,6 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 		return miner.ID, nil
 	}
 
-	// Save is a combined function.
-	// If save value does not contain its primary key,
-	// it executes Create. Otherwise it executes Update (with all fields).
 	err = r.db.Save(&miner).Error
 	if err != nil {
 		return 0, err
@@ -54,26 +52,20 @@ func (r *MinerRepository) Upsert(ctx context.Context, miner *Miner) (uint, error
 	return miner.ID, nil
 }
 
-// [ ]
-// JOIN with miner config
-/*
-	Struct db.Find(&users, User{Age: 20})
-	SELECT * FROM users WHERE age = 20;
-*/
-func (r *MinerRepository) ListByFleetID(ctx context.Context, miner *Miner) ([]*Miner, error) {
+func (r *MinerRepository) ListByFleetID(fleetId uint) ([]*Miner, error) {
 	var miners []*Miner
-	// TODO: test preload
+	// TODO: Select statement
 	// TODO: test a different way of defining the query with struct
-	err := r.db.Preload("Pools").Find(&miners, "fleet_id = ?", miners).Error
+	err := r.db.Where("fleet_id = ?", fleetId).Preload("Pools").Find(&miners).Error
 	if err != nil {
 		return nil, err
 	}
 	return miners, err
 }
 
-func (r *MinerRepository) ListByMacAddresses(mac_addresses []string) ([]*Miner, error) {
+func (r *MinerRepository) ListByMacAddresses(macAddresses []string) ([]*Miner, error) {
 	var miners []*Miner
-	err := r.db.Where("mac_address IN (?)", mac_addresses).Preload("Pools").Find(&miners).Error
+	err := r.db.Where("mac_address IN (?)", macAddresses).Preload("Pools").Find(&miners).Error
 	if err != nil {
 		return nil, err
 	}
@@ -89,4 +81,83 @@ func (r *MinerRepository) List() ([]*Miner, error) {
 	}
 
 	return miners, err
+}
+
+func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
+
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	for _, miner := range miners {
+		// TODO! ideally insert on conclict operation
+		if err := tx.Omit("Pools").Save(&miner).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error saving miner: %w", err)
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("error committing transaction: %w", err)
+	}
+	return nil
+}
+
+func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
+
+	// Construct the bulk upsert query
+	// valueStrings := make([]string, 0, len(miners))
+	// values := make([]interface{}, 0, len(miners)*5)
+	// for _, miner := range miners {
+	// 	valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?)")
+	// 	miner.UpdatedAt = time.Now()
+	// 	values = append(values, miner.Stats.HashRate, miner.Miner.MacAddress, miner.Miner.IPAddress, miner.FleetID, miner.UpdatedAt)
+	// }
+
+	// query := `
+	// 	INSERT INTO miners (hash_rate, mac_address, ip_address, fleet_id, updated_at)
+	// 	VALUES ` + strings.Join(valueStrings, ",") + `
+	// 	ON CONFLICT (mac_address, fleet_id) DO UPDATE
+	// 	SET
+	// 		hash_rate = EXCLUDED.hash_rate,
+	// 		mac_address = EXCLUDED.mac_address,
+	// 		ip_address = EXCLUDED.ip_address,
+	// 		fleet_id = EXCLUDED.fleet_id,
+	// 		updated_at = EXCLUDED.updated_at;
+	// `
+
+	// fmt.Println("BulkUpdateMinersWithPools,", len(miners))
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	/*
+		for _, miner := range miners {
+		    if err := db.Omit("Pools").Model(&miner).Where("mac_address = ? AND other_field = ?", miner.MACAddress, miner.OtherField).Updates(miner).Error; err != nil {
+		        return fmt.Errorf("error updating miner: %w", err)
+		    }
+		}
+
+	*/
+
+	for _, miner := range miners {
+		// TODO! ideally insert on conclict operation
+		conditions := map[string]interface{}{
+			"mac_address": miner.Miner.MacAddress,
+			"fleet_id":    miner.FleetID,
+		}
+
+		if err := tx.Omit("Pools").Where(conditions).Save(&miner).Error; err != nil {
+			tx.Rollback()
+			return fmt.Errorf("error saving miner: %w", err)
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	return nil
 }

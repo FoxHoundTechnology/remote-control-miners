@@ -38,8 +38,7 @@ type GetSystemInfoResponse struct {
 	MinerType    string `json:"miner_type"` // NOTE: miner model name (e.g. S19)
 }
 
-func AntMinerCGIGetSystemInfo(username, password, ipAddress string) (*GetSystemInfoResponse, error) {
-	t := http_auth.NewTransport(username, password)
+func AntMinerCGIGetSystemInfo(clientConnection *http_auth.DigestTransport, username, password, ipAddress string) (*GetSystemInfoResponse, error) {
 
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_system_info.cgi", ipAddress), nil)
 	if err != nil {
@@ -52,7 +51,7 @@ func AntMinerCGIGetSystemInfo(username, password, ipAddress string) (*GetSystemI
 		return nil, err
 	}
 
-	resp, err := t.RoundTrip(newRequest)
+	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
@@ -64,10 +63,6 @@ func AntMinerCGIGetSystemInfo(username, password, ipAddress string) (*GetSystemI
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"body":  body,
-		}).Info("Error reading response body")
 		return nil, err
 	}
 
