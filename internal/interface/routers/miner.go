@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	http_auth "github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
+
 	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
 	scanner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/scanner/domain"
 
@@ -101,6 +103,7 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 		})
 	})
 
+	// TODO: fleet_id
 	router.POST("/api/miners/control", func(ctx *gin.Context) {
 
 		var minerControlRequest MinerControlRequest
@@ -120,12 +123,19 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 
 		antMinerCGIServiceArray := []ant_miner_cgi_service.AntminerCGI{}
 
+		// FIXME: data access to username and password
+		// clientConnection := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
+
 		for _, miner := range miners {
 			minerType := miner.MinerType
+
+			// TODO: fix the logic to retrieve username/password
+			clientConnection := http_auth.NewTransport(miner.Config.Username, miner.Config.Password)
 
 			switch minerType {
 			case scanner_domain.AntminerCgi:
 				antMinerCGIService := ant_miner_cgi_service.NewAntminerCGI(
+					&clientConnection,
 					miner_domain.Config{
 						Username: miner.Config.Username,
 						Password: miner.Config.Password,

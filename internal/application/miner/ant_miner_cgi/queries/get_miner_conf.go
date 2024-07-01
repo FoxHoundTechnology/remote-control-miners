@@ -41,10 +41,7 @@ type GetMinerConfigResponse struct {
 	// Pools          []domain.Pool `json:"pools"`            // NOTE: List of pool settings. Only settings, no stats included
 }
 
-func AntMinerCGIGetMinerConfig(username, password, ipAddress string) (*GetMinerConfigResponse, error) {
-
-	t := http_auth.NewTransport(username, password)
-
+func AntMinerCGIGetMinerConfig(clientConnection *http_auth.DigestTransport, username, password, ipAddress string) (*GetMinerConfigResponse, error) {
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_miner_conf.cgi", ipAddress), nil)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -54,7 +51,7 @@ func AntMinerCGIGetMinerConfig(username, password, ipAddress string) (*GetMinerC
 		return nil, err
 	}
 
-	resp, err := t.RoundTrip(newRequest)
+	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,

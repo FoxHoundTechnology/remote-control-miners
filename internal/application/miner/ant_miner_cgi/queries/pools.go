@@ -48,16 +48,14 @@ type GetPoolsResponse struct {
 	Stale    int    `json:"stale"`     // stale shares
 }
 
-func AntMinerCGIGetPools(username, password, ipAddress string) ([]GetPoolsResponse, error) {
-
-	t := http_auth.NewTransport(username, password)
+func AntMinerCGIGetPools(clientConnection *http_auth.DigestTransport, username, password, ipAddress string) ([]GetPoolsResponse, error) {
 
 	newRequest, err := http.NewRequest("GET", fmt.Sprintf("http://%s/cgi-bin/pools.cgi", ipAddress), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := t.RoundTrip(newRequest)
+	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,7 @@ import (
 
 // cgi-bin/reboot.cgi: Reboot the miner.
 
-func AntMinerCGIReboot(username, password, ipAddress string) error {
+func AntMinerCGIReboot(clientConnection *http_auth.DigestTransport, username, password, ipAddress string) error {
 
 	t := http_auth.NewTransport(username, password)
 

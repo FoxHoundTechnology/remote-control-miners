@@ -7,6 +7,7 @@ import (
 	commands "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/commands"
 	queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
 	domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
+	"github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
 )
 
 // TODO: add the logic for updating the pool "stats"
@@ -28,10 +29,12 @@ type AntminerCGI struct {
 	FanPwm      string // fan pwm value
 	FreqLevel   string // frequency level
 	Model       string // miner model name (e.g. S19, S17)
-	rwMutex     *sync.RWMutex
+
+	clientConnection *http_auth.DigestTransport
+	rwMutex          *sync.RWMutex
 }
 
-func NewAntminerCGI(config domain.Config, miner domain.Miner, modelName string) *AntminerCGI {
+func NewAntminerCGI(clientConnection *http_auth.DigestTransport, config domain.Config, miner domain.Miner, modelName string) *AntminerCGI {
 	return &AntminerCGI{
 		Miner:  miner,
 		Mode:   domain.SleepMode,
@@ -49,12 +52,14 @@ func NewAntminerCGI(config domain.Config, miner domain.Miner, modelName string) 
 		FanPwm:      "100",
 		FreqLevel:   "",
 		Model:       modelName,
-		rwMutex:     new(sync.RWMutex),
+
+		clientConnection: clientConnection,
+		rwMutex:          new(sync.RWMutex),
 	}
 }
 
 func (a *AntminerCGI) CheckConfig() error {
-	GetMinerConfigResponse, err := queries.AntMinerCGIGetMinerConfig(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	GetMinerConfigResponse, err := queries.AntMinerCGIGetMinerConfig(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
 		return err
 	}
@@ -81,7 +86,7 @@ func (a *AntminerCGI) CheckConfig() error {
 func (a *AntminerCGI) SetNormalMode() error {
 	a.CheckConfig()
 
-	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
+	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
 		BitmainFanCtrl: a.FanCtrl,
 		BitmainFanPWM:  a.FanPwm,
 		FreqLevel:      a.FreqLevel,
@@ -106,7 +111,7 @@ func (a *AntminerCGI) SetNormalMode() error {
 func (a *AntminerCGI) SetSleepMode() error {
 	a.CheckConfig()
 
-	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
+	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
 		BitmainFanCtrl: a.FanCtrl,
 		BitmainFanPWM:  a.FanPwm,
 		FreqLevel:      a.FreqLevel,
@@ -132,13 +137,14 @@ func (a *AntminerCGI) SetSleepMode() error {
 func (a *AntminerCGI) SetLowPowerMode() error {
 	a.CheckConfig()
 
-	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
+	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
 		BitmainFanCtrl: a.FanCtrl,
 		BitmainFanPWM:  a.FanPwm,
 		FreqLevel:      a.FreqLevel,
 		MinerMode:      "3", // Low Power Mode
 		Pools:          a.Pools,
 	})
+
 	if err != nil {
 		return err
 	}
@@ -156,7 +162,7 @@ func (a *AntminerCGI) SetLowPowerMode() error {
 }
 
 func (a *AntminerCGI) CheckStats() error {
-	GetStatsResponse, err := queries.AntMinerCGIGetStats(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	GetStatsResponse, err := queries.AntMinerCGIGetStats(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
 		return err
 	}
@@ -191,7 +197,7 @@ func (a *AntminerCGI) CheckStats() error {
 }
 
 func (a *AntminerCGI) CheckPools() error {
-	GetPoolsResponse, err := queries.AntMinerCGIGetPools(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	GetPoolsResponse, err := queries.AntMinerCGIGetPools(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
 		return err
 	}
@@ -214,7 +220,7 @@ func (a *AntminerCGI) CheckPools() error {
 }
 
 func (a *AntminerCGI) CheckSystemInfo() error {
-	GetSystemInfoResponse, err := queries.AntMinerCGIGetSystemInfo(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	GetSystemInfoResponse, err := queries.AntMinerCGIGetSystemInfo(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
 		return err
 	}
@@ -231,7 +237,7 @@ func (a *AntminerCGI) CheckSystemInfo() error {
 }
 
 func (a *AntminerCGI) Reboot() error {
-	err := queries.AntMinerCGIReboot(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	err := queries.AntMinerCGIReboot(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
 		return err
 	}
@@ -241,7 +247,7 @@ func (a *AntminerCGI) Reboot() error {
 
 func (a *AntminerCGI) ChangePool(pools []domain.Pool) error {
 	a.CheckConfig()
-	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
+	SetMinerConfigResponse, err := commands.AntminerCGISetMinerConfig(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress, commands.SetMinerConfigPayload{
 		BitmainFanCtrl: a.FanCtrl,
 		BitmainFanPWM:  a.FanPwm,
 		FreqLevel:      a.FreqLevel,
@@ -265,7 +271,7 @@ func (a *AntminerCGI) ChangePool(pools []domain.Pool) error {
 }
 
 func (a *AntminerCGI) CheckNetworkInfo() error {
-	GetNetWorkInfoResponse, err := queries.AntMinerCGIGetNetworkInfo(a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	GetNetWorkInfoResponse, err := queries.AntMinerCGIGetNetworkInfo(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress)
 	if err != nil {
 		return err
 	}

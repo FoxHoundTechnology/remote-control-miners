@@ -188,18 +188,19 @@ func main() {
 				for i, ip := range ips {
 
 					wg.Add(1)
+					clientConnection := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
 
 					go func(i int, ip net.IP) {
 
 						defer wg.Done()
 
-						t := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
+						// this client can be reused
 						newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_system_info.cgi", ip), nil)
 						if err != nil {
 							log.Println("Error creating new request", err)
 							return
 						}
-						resp, err := t.RoundTrip(newRequest)
+						resp, err := clientConnection.RoundTrip(newRequest)
 						if err != nil {
 							return
 						}
@@ -218,6 +219,7 @@ func main() {
 						}
 
 						antMinerCGI := ant_miner_cgi_service.NewAntminerCGI(
+							&clientConnection,
 							miner_domain.Config{
 								Username: fleet.Scanner.Config.Username,
 								Password: fleet.Scanner.Config.Password,
@@ -232,21 +234,18 @@ func main() {
 
 						err = antMinerCGI.CheckStats()
 						if err != nil {
-							log.Printf("Error checking stats: %v", err)
 							workerErrors <- err
 							//	return
 						}
 
 						err = antMinerCGI.CheckPools()
 						if err != nil {
-							log.Printf("Error checking pools: %v", err)
 							workerErrors <- err
 							//return
 						}
 
 						err = antMinerCGI.CheckConfig()
 						if err != nil {
-							log.Printf("Error checking config: %v", err)
 							workerErrors <- err
 							//return
 						}
@@ -312,7 +311,7 @@ func main() {
 				wg.Wait()
 				close(antMinerCGIModel)
 
-				log.Println("length is ", len(antMinerCGIModel))
+				log.Println("length for fleet no", fleet.ID, " is ", len(antMinerCGIModel))
 
 				minerModelArr := make([]*miner_repo.Miner, len(antMinerCGIModel))
 				for antMinerCGI := range antMinerCGIModel {

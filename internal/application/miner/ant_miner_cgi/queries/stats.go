@@ -72,9 +72,8 @@ type StatsResponse struct {
 	ChainNum  int        `json:"chain_num"` // for missing hash_board
 }
 
-func AntMinerCGIGetStats(username, password, ipAddress string) (*StatsResponse, error) {
+func AntMinerCGIGetStats(clientConnection *http_auth.DigestTransport, username, password, ipAddress string) (*StatsResponse, error) {
 
-	t := http_auth.NewTransport(username, password)
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/stats.cgi", ipAddress), nil)
 	if err != nil {
 
@@ -86,7 +85,7 @@ func AntMinerCGIGetStats(username, password, ipAddress string) (*StatsResponse, 
 		return nil, err
 	}
 
-	resp, err := t.RoundTrip(newRequest)
+	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
 
 		logrus.WithFields(logrus.Fields{
