@@ -9,8 +9,6 @@ import (
 	"github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
 
 	miner "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
-
-	"github.com/sirupsen/logrus"
 )
 
 // cgi-bin/stats.cgi
@@ -76,22 +74,11 @@ func AntMinerCGIGetStats(clientConnection *http_auth.DigestTransport, username, 
 
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/stats.cgi", ipAddress), nil)
 	if err != nil {
-
-		logrus.WithFields(logrus.Fields{
-			"error":      err,
-			"newRequest": newRequest,
-		}).Info("Error creating new request")
-
 		return nil, err
 	}
 
 	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
-
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"resp":  resp,
-		}).Info("Error creating new request")
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -104,10 +91,6 @@ func AntMinerCGIGetStats(clientConnection *http_auth.DigestTransport, username, 
 	var rawGetStatsResponse rawGetStatsResponse
 	err = json.Unmarshal(body, &rawGetStatsResponse)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error":   err,
-			"reponse": body,
-		}).Info("Error unmarshalling response body")
 		return nil, err
 	}
 

@@ -8,6 +8,8 @@
 *.so
 *.dylib
 *.env
+fxhnd.json
+
 
 # Test binary, built with `go test -c`
 *.test
@@ -16,17 +18,14 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-
+# vendor/
 
 # Go workspace file
 go.work
 
 
-fxhnd.json
-
-frontend/node_modules
-frontend/.next
+frontend/node_modules/*
 frontend/.env.*
+frontend/.next
 
-docker-compose.prod.yml
 Caddyfile
