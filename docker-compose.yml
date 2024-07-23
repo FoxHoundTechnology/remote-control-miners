@@ -56,11 +56,6 @@ services:
         limits:
           cpus: '3.5'
           memory: '4g'
-    # next
-    # ulimits:
-    #   nofile:
-    #     soft: 100000 # Increase the soft limit
-    #     hard: 100000 # Increase the hard limit
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgresql.conf:/etc/postgresql/postgresql.conf
@@ -83,9 +78,6 @@ services:
     volumes:
       - influxdb_data:/var/lib/influxdb
       - ./init-influxdb.sh:/init-influxdb.sh
-    # TODO: automate the bucket creation and token generation
-    # entrypoint: ['/bin/bash', '-c']
-    # command: ['./init-influxdb.sh && exec influxd']
     ports:
       - 8086:8086
 

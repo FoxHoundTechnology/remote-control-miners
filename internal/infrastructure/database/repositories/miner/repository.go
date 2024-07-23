@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -83,16 +85,21 @@ func (r *MinerRepository) List() ([]*Miner, error) {
 	return miners, err
 }
 
+// TODO: FIXME
 func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
-
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return tx.Error
 	}
 
 	for _, miner := range miners {
-		// TODO! ideally insert on conclict operation
-		if err := tx.Omit("Pools").Save(&miner).Error; err != nil {
+
+		conditions := map[string]interface{}{
+			"mac_address": miner.Miner.MacAddress,
+			"fleet_id":    miner.FleetID,
+		}
+
+		if err := tx.Where(conditions).Save(&miner).Error; err != nil {
 			tx.Rollback()
 			return fmt.Errorf("error saving miner: %w", err)
 		}
@@ -106,53 +113,77 @@ func (r *MinerRepository) CreateMinersInBatch(miners []*Miner) error {
 
 func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 
-	// Construct the bulk upsert query
-	// valueStrings := make([]string, 0, len(miners))
-	// values := make([]interface{}, 0, len(miners)*5)
-	// for _, miner := range miners {
-	// 	valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?)")
-	// 	miner.UpdatedAt = time.Now()
-	// 	values = append(values, miner.Stats.HashRate, miner.Miner.MacAddress, miner.Miner.IPAddress, miner.FleetID, miner.UpdatedAt)
-	// }
+	if len(miners) == 0 {
+		return nil
+	}
 
-	// query := `
-	// 	INSERT INTO miners (hash_rate, mac_address, ip_address, fleet_id, updated_at)
-	// 	VALUES ` + strings.Join(valueStrings, ",") + `
-	// 	ON CONFLICT (mac_address, fleet_id) DO UPDATE
-	// 	SET
-	// 		hash_rate = EXCLUDED.hash_rate,
-	// 		mac_address = EXCLUDED.mac_address,
-	// 		ip_address = EXCLUDED.ip_address,
-	// 		fleet_id = EXCLUDED.fleet_id,
-	// 		updated_at = EXCLUDED.updated_at;
-	// `
-
-	// fmt.Println("BulkUpdateMinersWithPools,", len(miners))
 	tx := r.db.Begin()
 	if tx.Error != nil {
 		return tx.Error
 	}
 
-	/*
-		for _, miner := range miners {
-		    if err := db.Omit("Pools").Model(&miner).Where("mac_address = ? AND other_field = ?", miner.MACAddress, miner.OtherField).Updates(miner).Error; err != nil {
-		        return fmt.Errorf("error updating miner: %w", err)
-		    }
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
 		}
+	}()
 
-	*/
+	// Prepare the values for bulk upsert
+	valueStrings := make([]string, 0, len(miners))
+	valueArgs := make([]interface{}, 0, len(miners)*16) // Adjusted for 16 fields
 
 	for _, miner := range miners {
-		// TODO! ideally insert on conclict operation
-		conditions := map[string]interface{}{
-			"mac_address": miner.Miner.MacAddress,
-			"fleet_id":    miner.FleetID,
-		}
+		valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		valueArgs = append(valueArgs,
+			miner.Miner.MacAddress,
+			miner.FleetID,
+			time.Now(),
+			miner.Miner.IPAddress,
+			miner.Stats.HashRate,
+			miner.Stats.RateIdeal,
+			miner.Stats.Uptime,
+			miner.Config.Username,
+			miner.Config.Password,
+			miner.Config.Firmware,
+			miner.MinerType,
+			miner.ModelName,
+			miner.Mode,
+			miner.Status,
+			miner.Fan,
+			miner.Temperature,
+		)
+	}
+	// Construct the SQL query
+	query := `
+			 INSERT INTO public.miners (
+				 mac_address, fleet_id, updated_at, ip_address, 
+				 hash_rate, rate_ideal, uptime, username, password, firmware, 
+				 miner_type, model_name, mode, status, fan, temperature
+			 ) 
+			 VALUES %s
+			 ON CONFLICT (mac_address, fleet_id) DO UPDATE SET
+				 updated_at = EXCLUDED.updated_at,
+				 ip_address = EXCLUDED.ip_address,
+				 hash_rate = EXCLUDED.hash_rate,
+				 rate_ideal = EXCLUDED.rate_ideal,
+				 uptime = EXCLUDED.uptime,
+				 username = EXCLUDED.username,
+				 password = EXCLUDED.password,
+				 firmware = EXCLUDED.firmware,
+				 miner_type = EXCLUDED.miner_type,
+				 model_name = EXCLUDED.model_name,
+				 mode = EXCLUDED.mode,
+				 status = EXCLUDED.status,
+				 fan = EXCLUDED.fan,
+				 temperature = EXCLUDED.temperature
+			 `
+	query = fmt.Sprintf(query, strings.Join(valueStrings, ","))
 
-		if err := tx.Omit("Pools").Where(conditions).Save(&miner).Error; err != nil {
-			tx.Rollback()
-			return fmt.Errorf("error saving miner: %w", err)
-		}
+	// TODO: POOL UPDATE
+
+	if err := tx.Exec(query, valueArgs...).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error updating miners: %w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {

@@ -18,6 +18,7 @@ import (
 	postgres "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/postgres"
 
 	http_auth "github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
+	"github.com/FoxHoundTechnology/remote-control-miners/pkg/logger"
 
 	// TODO: db migration/seed
 	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
@@ -56,7 +57,6 @@ func main() {
 	dbConfig.SetMaxIdleConns(50)
 
 	// Set connection pool settings
-
 	err = postgresDB.AutoMigrate(
 		// NOTE: The order matters
 		&fleet_repo.Fleet{},
@@ -135,7 +135,7 @@ func main() {
 	workerErrors := make(chan error)
 	defer close(workerErrors)
 
-	ticker := time.NewTicker(300 * time.Second)
+	ticker := time.NewTicker(180 * time.Second)
 	defer ticker.Stop()
 
 	// Create a context that can be cancelled
@@ -145,6 +145,7 @@ func main() {
 	for range ticker.C {
 		fmt.Println("Running scheduled tasks...")
 
+		minerRepository := miner_repo.NewMinerRepository(postgresDB)
 		fleets, err := fleetRepo.ListScannersByFleet()
 		if err != nil {
 			fmt.Println("Error getting fleet list:", err)
@@ -155,7 +156,6 @@ func main() {
 		for _, fleet := range fleets {
 
 			fleet := fleet
-			time.Sleep(500 * time.Millisecond) // Adjust the duration as needed
 
 			go func(fleetModel fleet_repo.Fleet) {
 				log.Printf("Processing scanner ID: %d\n", fleet.ID)
@@ -187,6 +187,7 @@ func main() {
 
 				for i, ip := range ips {
 
+					time.Sleep(100 * time.Millisecond) // Adjust the duration as needed
 					wg.Add(1)
 					clientConnection := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
 
@@ -197,7 +198,6 @@ func main() {
 						// this client can be reused
 						newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_system_info.cgi", ip), nil)
 						if err != nil {
-							log.Println("Error creating new request", err)
 							return
 						}
 						resp, err := clientConnection.RoundTrip(newRequest)
@@ -208,13 +208,11 @@ func main() {
 
 						body, err := io.ReadAll(resp.Body)
 						if err != nil {
-							log.Println("Error reading response body", err)
 							return
 						}
 
 						var rawGetSystemInfoResponse ant_miner_cgi_queries.RawGetSystemInfoResponse
 						if err := json.Unmarshal(body, &rawGetSystemInfoResponse); err != nil {
-							log.Println("Error unmarshalling response body", err)
 							return
 						}
 
@@ -235,19 +233,19 @@ func main() {
 						err = antMinerCGI.CheckStats()
 						if err != nil {
 							workerErrors <- err
-							//	return
+							return
 						}
 
 						err = antMinerCGI.CheckPools()
 						if err != nil {
 							workerErrors <- err
-							//return
+							return
 						}
 
 						err = antMinerCGI.CheckConfig()
 						if err != nil {
 							workerErrors <- err
-							//return
+							return
 						}
 
 						newMinerModel := &miner_repo.Miner{
@@ -314,16 +312,21 @@ func main() {
 				log.Println("length for fleet no", fleet.ID, " is ", len(antMinerCGIModel))
 
 				minerModelArr := make([]*miner_repo.Miner, len(antMinerCGIModel))
+				index := 0
 				for antMinerCGI := range antMinerCGIModel {
-					minerModelArr = append(minerModelArr, antMinerCGI)
+					// minerModelArr = append(minerModelArr, antMinerCGI)
+					minerModelArr[index] = antMinerCGI
+					index++
 				}
 
-				// minerRepository.UpdateMinersInBatch(minerModelArr)
-				// minerRepository.CreateMinersInBatch(minerModelArr)
+				fmt.Println("MINEROUTPUT", minerModelArr)
+
+				minerRepository.UpdateMinersInBatch(minerModelArr)
+				//minerRepository.CreateMinersInBatch(minerModelArr)
+				logger.WriteIntToFile(len(minerModelArr), fleet.ID)
 
 				fmt.Println("========================END OF WORKER=========================", fleet.Name)
 			}(fleet)
-
 		}
 	}
 }

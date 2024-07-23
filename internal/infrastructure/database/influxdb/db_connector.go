@@ -20,16 +20,11 @@ func Init() InfluxDBConnectionSettings {
 
 	org := os.Getenv("INFLUXDB_ORG")
 	bucket := os.Getenv("INFLUXDB_BUCKET")
-	// url := os.Getenv("INFLUX_DB_URL")
-	// port := os.Getenv("INFLUX_DB_PORT")
-	// path := fmt.Sprintf("%s:%s", url, port)
 	url := "http://influxdb:8086" // NOTE: path has to be identical to container service name
 	token := os.Getenv("INFLUXDB_TOKEN")
 
-	// EXPERMENT http client configuraiton
-
 	client := influxDB.NewClientWithOptions(url, token,
-		influxDB.DefaultOptions().SetBatchSize(200))
+		influxDB.DefaultOptions())
 
 	return InfluxDBConnectionSettings{
 		Client: client,
