@@ -12,6 +12,8 @@ services:
     env_file:
       - .env
     environment:
+      - MINER_LATENCY={MINER_LATENCY}
+
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
@@ -42,7 +44,6 @@ services:
     container_name: postgres
     image: postgres:13
     restart: always
-    command: postgres -c 'max_connections=20000'
     env_file:
       - .env
     environment:
