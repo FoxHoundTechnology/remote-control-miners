@@ -135,7 +135,7 @@ func main() {
 	workerErrors := make(chan error)
 	defer close(workerErrors)
 
-	ticker := time.NewTicker(180 * time.Second)
+	ticker := time.NewTicker(100 * time.Second)
 	defer ticker.Stop()
 
 	// Create a context that can be cancelled
@@ -154,7 +154,7 @@ func main() {
 		}
 
 		for _, fleet := range fleets {
-
+			time.Sleep(100 * time.Millisecond)
 			fleet := fleet
 
 			go func(fleetModel fleet_repo.Fleet) {
@@ -311,22 +311,31 @@ func main() {
 
 				log.Println("length for fleet no", fleet.ID, " is ", len(antMinerCGIModel))
 
-				minerModelArr := make([]*miner_repo.Miner, len(antMinerCGIModel))
-				index := 0
+				minerModelArr := make([]*miner_repo.Miner, 0, len(antMinerCGIModel))
 				for antMinerCGI := range antMinerCGIModel {
-					// minerModelArr = append(minerModelArr, antMinerCGI)
-					minerModelArr[index] = antMinerCGI
-					index++
+					minerModelArr = append(minerModelArr, antMinerCGI)
 				}
 
 				fmt.Println("MINEROUTPUT", minerModelArr)
 
-				minerRepository.UpdateMinersInBatch(minerModelArr)
+				err := minerRepository.UpdateMinersInBatch(minerModelArr)
+				if err != nil {
+					workerErrors <- err
+					fmt.Println("Error updating miners in batch", err)
+					return
+				}
+
 				//minerRepository.CreateMinersInBatch(minerModelArr)
-				logger.WriteIntToFile(len(minerModelArr), fleet.ID)
+				err = logger.WriteIntToFile(len(minerModelArr), fleet.ID)
+				if err != nil {
+					workerErrors <- err
+					fmt.Println("Error writing to file", err)
+					return
+				}
 
 				fmt.Println("========================END OF WORKER=========================", fleet.Name)
 			}(fleet)
+
 		}
 	}
 }
