@@ -9,7 +9,7 @@ import (
 
 var fileMutex sync.Mutex
 
-func WriteIntToFile(num int, areaCode uint) error {
+func WriteIntToFile(num int, areaCode string) error {
 	// Lock the mutex before entering the critical section
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
@@ -21,6 +21,6 @@ func WriteIntToFile(num int, areaCode uint) error {
 	defer file.Close()
 
 	timestamp := time.Now().Format(time.RFC3339)
-	_, err = fmt.Fprintf(file, "%s: Area Code - %d Container - %d\n", timestamp, areaCode, num)
+	_, err = fmt.Fprintf(file, "%s: Area Code - %s. Miner captured:  %d\n", timestamp, areaCode, num)
 	return err
 }
