@@ -32,19 +32,18 @@ type SetMinerConfigResponse struct {
 	Stats string `json:"stats"`
 }
 
-func AntminerCGISetMinerConfig(username, password, ipAddress string, payload SetMinerConfigPayload) (*SetMinerConfigResponse, error) {
+func AntminerCGISetMinerConfig(clientConnection *http_auth.DigestTransport, username, password, ipAddress string, payload SetMinerConfigPayload) (*SetMinerConfigResponse, error) {
 	marshalledPayload, err := json.Marshal(payload) // original payload is retrieved from get_miner_conf endpoint
 	if err != nil {
 		return nil, err
 	}
 
-	t := http_auth.NewTransport(username, password)
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/set_miner_conf.cgi", ipAddress), bytes.NewBuffer(marshalledPayload))
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := t.RoundTrip(newRequest)
+	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
 		return nil, err
 	}

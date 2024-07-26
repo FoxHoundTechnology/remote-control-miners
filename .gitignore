@@ -22,3 +22,11 @@ fxhnd.json
 
 # Go workspace file
 go.work
+
+
+frontend/node_modules/*
+frontend/.env.*
+frontend/.next
+
+Caddyfile
+miner-log.txt

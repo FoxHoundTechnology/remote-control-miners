@@ -12,6 +12,8 @@ services:
     env_file:
       - .env
     environment:
+      - MINER_LATENCY={MINER_LATENCY}
+
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
@@ -21,6 +23,17 @@ services:
       - INFLUXDB_ORG=${INFLUXDB_ORG}
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+
+      - GOMAXPROCS=7 # Set the number of CPU cores for the Go application
+
+    deploy:
+      resources:
+        limits:
+          cpus: '7.0' # Maximum 2 CPU cores for the Go server
+          memory: '6g' # Maximum 4GB of memory for the Go server
+        reservations:
+          cpus: '7.0' # Reserve at least 1 CPU core for the Go server
+          memory: '6g' # Reserve at least 2GB of memory for the Go server
     ports:
       - 8080:8080
     depends_on:
@@ -39,8 +52,14 @@ services:
       - POSTGRES_DB=${DB_NAME}
       - DB_PORT=${DB_PORT}
       - DB_HOST=${DB_HOST}
+    deploy:
+      resources:
+        limits:
+          cpus: '3.5'
+          memory: '4g'
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - 5432:5432
 
@@ -60,9 +79,6 @@ services:
     volumes:
       - influxdb_data:/var/lib/influxdb
       - ./init-influxdb.sh:/init-influxdb.sh
-    # TODO: automate the bucket creation and token generation
-    # entrypoint: ['/bin/bash', '-c']
-    # command: ['./init-influxdb.sh && exec influxd']
     ports:
       - 8086:8086
 

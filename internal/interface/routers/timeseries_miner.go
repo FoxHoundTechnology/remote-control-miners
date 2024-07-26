@@ -33,7 +33,7 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 	InfluxDBConnectionSettings := timeseries_database.Init()
 	minerTimeSeriesRepository := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
 
-	router.POST("/miners/timeseries/minerstats", func(ctx *gin.Context) {
+	router.POST("/api/miners/timeseries/minerstats", func(ctx *gin.Context) {
 		request := MinerTimeSeriesRequest{}
 		if err := ctx.ShouldBindJSON(&request); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
@@ -57,7 +57,7 @@ func RegisterMinerTimeSeriesRoutes(router *gin.Engine) {
 		})
 	})
 
-	router.POST("miners/timeseries/poolstats", func(ctx *gin.Context) {
+	router.POST("/api/miners/timeseries/poolstats", func(ctx *gin.Context) {
 		request := MinerTimeSeriesRequest{}
 		if err := ctx.ShouldBindJSON(&request); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})

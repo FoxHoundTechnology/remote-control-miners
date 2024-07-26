@@ -12,7 +12,7 @@ import (
 // TODO: separate the response logic into controller layer
 func RegisterScannerRoutes(db *gorm.DB, router *gin.Engine) {
 
-	router.GET("/scanners/list", func(ctx *gin.Context) {
+	router.GET("/api/scanners/list", func(ctx *gin.Context) {
 		scanners := []scanner_repo.Scanner{}
 		db.Find(&scanners)
 

@@ -31,16 +31,14 @@ type GetNetworkInfoResponse struct {
 	IPAddress  string `json:"ip_address"`
 }
 
-func AntMinerCGIGetNetworkInfo(username, password, ipAddress string) (*GetNetworkInfoResponse, error) {
-
-	t := http_auth.NewTransport(username, password)
+func AntMinerCGIGetNetworkInfo(clientConnection *http_auth.DigestTransport, username, password, ipAddress string) (*GetNetworkInfoResponse, error) {
 
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_network_info.cgi", ipAddress), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := t.RoundTrip(newRequest)
+	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
 		return nil, err
 	}

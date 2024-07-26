@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  remote_control_server:
+    container_name: remote_control_server
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+
+      - GOMAXPROCS=5
+    deploy:
+      resources:
+        limits:
+          cpus: '6.0'
+          memory: '6g'
+        reservations:
+          cpus: '6.0'
+          memory: '4g'
+    ports:
+      - 8080:8080
+    networks:
+      - default
+      - caddy_net
+    depends_on:
+      - influxdb
+      - postgres
+
+  postgres:
+    container_name: postgres
+    image: postgres:13
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_DB=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - DB_HOST=${DB_HOST}
+    deploy:
+      resources:
+        limits:
+          cpus: '3.5'
+          memory: '4g'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./enable_postgres_log.sh:/docker-entrypoint-initdb.d/enable_docker_log.sh
+    entrypoint: ['/docker-entrypoint-initdb.d/enable_docker_log.sh']
+    ports:
+      - 5432:5432
+
+  influxdb:
+    container_name: influxdb
+    image: influxdb:latest
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+      - ./init-influxdb.sh:/init-influxdb.sh
+    # TODO: automate the bucket creation and token generation
+    # entrypoint: ['/bin/bash', '-c']
+    # command: ['./init-influxdb.sh && exec influxd']
+    ports:
+      - 8086:8086
+
+  frontend:
+    container_name: nextjs_frontend
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    # volumes:
+    #   - ./web:/app
+    depends_on:
+      - remote_control_server
+    networks:
+      - caddy_net
+
+  caddy:
+    container_name: caddy
+    image: caddy:2.6.2-alpine
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - CADDY_INGRESS_NETWORKS=caddy_net
+    networks:
+      - caddy_net
+    depends_on:
+      - remote_control_server
+      - nextjs_frontend
+
+networks:
+  caddy_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  influxdb_data:
+  caddy_data:
+  caddy_config:

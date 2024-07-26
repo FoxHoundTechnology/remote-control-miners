@@ -13,7 +13,7 @@ import (
 
 func RegisterFleetRoutes(db *gorm.DB, router *gin.Engine) {
 
-	router.GET("/fleets/list", func(ctx *gin.Context) {
+	router.GET("/api/fleets/list", func(ctx *gin.Context) {
 		fleetRepository := fleet_repo.NewFleetRepository(db)
 		fleets, err := fleetRepository.ListScannersByFleet()
 
