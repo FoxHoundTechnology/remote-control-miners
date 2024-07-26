@@ -24,7 +24,7 @@ import (
 // TODO: set up an aggregated error response for miner controller logic
 // TODO: separate the response logic into controller layer
 
-type MinerDetailRequest struct {
+type MinerRequest struct {
 	MacAddress string `json:"mac_address"`
 }
 
@@ -38,16 +38,63 @@ type MinerControlRequest struct {
 }
 
 func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
-
-	router.POST("/api/miners/detail", func(ctx *gin.Context) {
-		var minerDetailRequest MinerDetailRequest
-		if err := ctx.ShouldBindJSON(&minerDetailRequest); err != nil {
+	router.POST("/api/miners/log", func(ctx *gin.Context) {
+		var minerRequest MinerRequest
+		if err := ctx.ShouldBindJSON(&minerRequest); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
 			return
 		}
 
 		minerRepository := miner_repo.NewMinerRepository(db)
-		miner, err := minerRepository.GetByMacAddress(minerDetailRequest.MacAddress)
+		miner, err := minerRepository.GetByMacAddress(minerRequest.MacAddress)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error fetching miner data from database",
+				"data":    err,
+			})
+			return
+		}
+
+		clientConnection := http_auth.NewTransport(miner.Config.Username, miner.Config.Password)
+		antMinerCGIService := ant_miner_cgi_service.NewAntminerCGI(
+			&clientConnection,
+			miner_domain.Config{
+				Username: miner.Config.Username,
+				Password: miner.Config.Password,
+				Firmware: miner.Config.Firmware,
+			},
+			miner_domain.Miner{
+				IPAddress:  miner.Miner.IPAddress,
+				MacAddress: miner.Miner.MacAddress,
+			},
+			miner.ModelName,
+		)
+
+		err = antMinerCGIService.CheckLog()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "error fetching miner log",
+				"data":    err,
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "successfully fetched miner log",
+			"data":    antMinerCGIService.Log,
+		})
+
+	})
+
+	router.POST("/api/miners/detail", func(ctx *gin.Context) {
+		var minerRequest MinerRequest
+		if err := ctx.ShouldBindJSON(&minerRequest); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"Incorrect request object": err.Error()})
+			return
+		}
+
+		minerRepository := miner_repo.NewMinerRepository(db)
+		miner, err := minerRepository.GetByMacAddress(minerRequest.MacAddress)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"message": "error fetching miner detail",
@@ -104,6 +151,7 @@ func RegisterMinerRoutes(db *gorm.DB, router *gin.Engine) {
 	})
 
 	// TODO: fleet_id
+	// TODO: seggregate the caller logic from the router endpoint to the controller folder
 	router.POST("/api/miners/control", func(ctx *gin.Context) {
 
 		var minerControlRequest MinerControlRequest

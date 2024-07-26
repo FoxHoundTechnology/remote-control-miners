@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	timeseries "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/influxdb"
 	postgres "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/postgres"
 
 	http_auth "github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
@@ -52,9 +53,8 @@ var INTERVAL_MINS = 5
 var MAX_WORKERS = 10
 
 func main() {
-
 	postgresDB := postgres.Init()
-	// InfluxDBConnectionSettings := timeseries.Init()
+	InfluxDBConnectionSettings := timeseries.Init()
 	dbConfig, err := postgresDB.DB()
 	if err != nil {
 		log.Fatalf("Failed to get the database connection: %v", err)
@@ -122,7 +122,8 @@ func main() {
 	// TODO: separate the worker logic from the main function
 	//---------------------------WORKER LOGIC--------------------------------
 	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
-	// minerTimeSeriesRepository := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
+	minerTimeSeriesRepo := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
+	minerRepo := miner_repo.NewMinerRepository(postgresDB)
 
 	// panicHandler := func(p interface{}) {
 	// 	log.Println("worker paniced %v", p)
@@ -151,18 +152,14 @@ func main() {
 	var mtx sync.Mutex
 
 	for range ticker.C {
-
 		mtx.Lock()
 		fmt.Println("Running scheduled tasks...")
 
 		select {
-
 		// If the inProgressFlag channel is empty, proceed
 		case inProgressFlag <- struct{}{}:
-
 			go func() {
-
-				processFleets(postgresDB, fleetRepo, workerErrors)
+				processFleets(postgresDB, minerTimeSeriesRepo, minerRepo, fleetRepo, workerErrors)
 				<-inProgressFlag // remove the flag
 				mtx.Unlock()
 
@@ -173,14 +170,12 @@ func main() {
 						}
 					}
 				}()
-
 			}()
 
 		// If the inProgress flag channel is full (size = 1), skip the current iteration
 		default:
 			fmt.Println("Skipping the current iteration...")
 			mtx.Unlock()
-
 		}
 
 	}
@@ -188,10 +183,11 @@ func main() {
 
 func processFleets(
 	postgresDB *gorm.DB,
+	timeseriesRepo *miner_repo.MinerTimeSeriesRepository,
+	minerRepo *miner_repo.MinerRepository,
 	fleetRepo *fleet_repo.FleetRepository,
 	workerErrors chan error,
 ) {
-	minerRepository := miner_repo.NewMinerRepository(postgresDB)
 	fleets, err := fleetRepo.ListScannersByFleet()
 	if err != nil {
 		log.Println("Error getting fleet list:", err)
@@ -248,6 +244,7 @@ func processFleets(
 
 				time.Sleep(100 * time.Millisecond) // Adjust the duration as needed
 				wg.Add(1)
+
 				clientConnection := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
 
 				go func(i int, ip net.IP) {
@@ -377,7 +374,7 @@ func processFleets(
 
 			fmt.Println("MINEROUTPUT", minerModelArr)
 
-			err := minerRepository.UpdateMinersInBatch(minerModelArr)
+			err := minerRepo.UpdateMinersInBatch(minerModelArr)
 			if err != nil {
 				workerErrors <- err
 				fmt.Println("Error updating miners in batch", err)

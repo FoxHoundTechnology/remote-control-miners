@@ -9,7 +9,6 @@ import (
 	"github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
 )
 
-// / TODO:
 type LogResponse struct {
 	Log string
 }
