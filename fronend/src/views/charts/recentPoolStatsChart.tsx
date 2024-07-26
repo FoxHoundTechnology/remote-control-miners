@@ -32,38 +32,43 @@ type AggregatedData = {
 }
 
 function generateChartDataFromPoolStats(poolTimeSeriesRecord: any[], timestamps: Date[]) {
-  const currentTime = new Date(timestamps[timestamps?.length - 1]).getTime() || new Date().getTime()
+  // Default to current time if timestamps is null/undefined or empty
+  const currentTime =
+    timestamps && timestamps.length > 0 ? new Date(timestamps[timestamps.length - 1]).getTime() : new Date().getTime()
   const sixHoursAgo = currentTime - 6 * 60 * 60 * 1000
 
   const hourlyData: { [hour: string]: any[] } = {}
-  poolTimeSeriesRecord?.forEach((record, index) => {
-    const timestamp = timestamps[index]
-    let timestampMillis: number
 
-    if (timestamp instanceof Date) {
-      timestampMillis = timestamp.getTime()
-    } else if (typeof timestamp === 'string') {
-      timestampMillis = new Date(timestamp).getTime()
-    } else if (typeof timestamp === 'number') {
-      timestampMillis = timestamp
-    } else {
-      console.error('Invalid timestamp format:', timestamp)
-      return
-    }
+  if (poolTimeSeriesRecord && timestamps) {
+    poolTimeSeriesRecord.forEach((record, index) => {
+      const timestamp = timestamps[index]
+      let timestampMillis: number
 
-    if (timestampMillis < sixHoursAgo) {
-      return
-    }
+      if (timestamp instanceof Date) {
+        timestampMillis = timestamp.getTime()
+      } else if (typeof timestamp === 'string') {
+        timestampMillis = new Date(timestamp).getTime()
+      } else if (typeof timestamp === 'number') {
+        timestampMillis = timestamp
+      } else {
+        console.error('Invalid timestamp format:', timestamp)
+        return
+      }
 
-    const hour = new Date(timestampMillis).getUTCHours()
-    const key = `${hour}`
+      if (timestampMillis < sixHoursAgo) {
+        return
+      }
 
-    if (!hourlyData[key]) {
-      hourlyData[key] = []
-    }
+      const hour = new Date(timestampMillis).getUTCHours()
+      const key = `${hour}`
 
-    hourlyData[key].push(record)
-  })
+      if (!hourlyData[key]) {
+        hourlyData[key] = []
+      }
+
+      hourlyData[key].push(record)
+    })
+  }
 
   const acceptedData = []
   const rejectedData = []

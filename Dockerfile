@@ -17,6 +17,12 @@ RUN go mod download
 # Install a specific version of Air compatible with Go 1.21
 RUN go install github.com/cosmtrek/air@v1.49.0
 
+# Copy the Air configuration file
+COPY .air.toml ./
+
+# Copy the rest of the application
+COPY . .
+
 # Expose port 8080 to the outside world
 EXPOSE 8080
 

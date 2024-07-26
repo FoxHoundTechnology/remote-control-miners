@@ -24,8 +24,12 @@ interface PickerProps {
   end: Date | number
 }
 
-function generateChartDataFromPoolStats(poolTimeSeriesRecord: PoolStatsData[], timestamps: string[]) {
-  const currentTime = new Date(timestamps[timestamps.length - 1]).getTime() || new Date().getTime()
+function generateChartDataFromPoolStats(
+  poolTimeSeriesRecord: PoolStatsData[] | null | undefined,
+  timestamps: string[] | null | undefined
+) {
+  const currentTime =
+    timestamps && timestamps.length > 0 ? new Date(timestamps[timestamps.length - 1]).getTime() : new Date().getTime()
 
   const acceptedData = []
   const rejectedData = []
@@ -36,14 +40,12 @@ function generateChartDataFromPoolStats(poolTimeSeriesRecord: PoolStatsData[], t
     const hourAgoMillis = currentTime - offset * 60 * 60 * 1000
     const hourAgo = new Date(hourAgoMillis).getUTCHours()
 
-    acceptedData.unshift(poolTimeSeriesRecord[offset]?.accepted)
-    rejectedData.unshift(poolTimeSeriesRecord[offset]?.rejected)
-    staledData.unshift(poolTimeSeriesRecord[offset]?.stale)
+    acceptedData.unshift(poolTimeSeriesRecord?.[offset]?.accepted ?? 0)
+    rejectedData.unshift(poolTimeSeriesRecord?.[offset]?.rejected ?? 0)
+    staledData.unshift(poolTimeSeriesRecord?.[offset]?.stale ?? 0)
 
     hours.unshift(`${hourAgo}:00`)
   }
-
-  console.log('modified array for accept', acceptedData)
 
   return {
     data: [
@@ -73,8 +75,8 @@ const PoolStatsChart = ({ poolStatsArr, timeStampArr }: PoolStatsChartProps) => 
   const [endDate, setEndDate] = useState<DateType>(null)
   const [startDate, setStartDate] = useState<DateType>(null)
 
-  const { data, hours } = generateChartDataFromPoolStats(poolStatsArr, timeStampArr)
-
+  const { data, hours } =
+    poolStatsArr && timeStampArr ? generateChartDataFromPoolStats(poolStatsArr, timeStampArr) : { data: [], hours: [] }
   const theme = useTheme()
 
   const options: ApexOptions = {

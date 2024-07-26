@@ -131,7 +131,13 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
 
   // Aggregate loading and error states
   const isLoading = minerDetailsQuery.isLoading || minerStatsQuery.isLoading || poolStatsQuery.isLoading
-  const isError = minerDetailsQuery.isError || minerStatsQuery.isError || poolStatsQuery.isError
+  const isError =
+    minerDetailsQuery.isError ||
+    minerStatsQuery.isError ||
+    poolStatsQuery.isError ||
+    !minerDetailsQuery.data ||
+    !minerStatsQuery.data ||
+    !poolStatsQuery.data
 
   // Process data only when all queries have succeeded
   const { hashrateArr, tempSensorArr, fanSensorArr, timestampArr } = useMemo(() => {
@@ -153,11 +159,8 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
       }
     }
 
-    // // // Fill timestampArr only up to the length of the longest array from above
     if (minerStatsQuery?.data?.timestamps) {
-      for (let i = 0; i < minerStatsQuery?.data?.timestamps?.length; i++) {
-        timestampArr.push(String(minerStatsQuery?.data.timestamps[i]))
-      }
+      timestampArr.push(...minerStatsQuery.data.timestamps.map(String))
     }
 
     return {
@@ -191,7 +194,7 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
                   <Logo src={`/images/logos/antminer_black.png`} alt={''} />
                 )}
                 <Typography variant='h5' sx={{ mt: 1, mb: 4 }}>
-                  {minerDetailsQuery?.data?.model}
+                  {minerDetailsQuery?.data?.model || 'N/A'}
                 </Typography>
                 <Box
                   sx={{
@@ -272,7 +275,7 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
             </Card>
           </Grid>
           <Grid item xs={12}>
-            {!isLoading && !isError && <RecentPoolStatsChart poolStats={poolStatsQuery?.data} />}
+            {!isLoading && !isError && poolStatsQuery?.data && <RecentPoolStatsChart poolStats={poolStatsQuery.data} />}
           </Grid>
         </Grid>{' '}
       </Grid>
