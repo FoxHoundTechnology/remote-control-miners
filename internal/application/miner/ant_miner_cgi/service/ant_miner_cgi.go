@@ -29,6 +29,7 @@ type AntminerCGI struct {
 	FanPwm      string // fan pwm value
 	FreqLevel   string // frequency level
 	Model       string // miner model name (e.g. S19, S17)
+	Log         string // current miner log
 
 	clientConnection *http_auth.DigestTransport
 	rwMutex          *sync.RWMutex
@@ -281,6 +282,20 @@ func (a *AntminerCGI) CheckNetworkInfo() error {
 
 	a.Miner.IPAddress = GetNetWorkInfoResponse.IPAddress
 	a.Miner.MacAddress = GetNetWorkInfoResponse.MacAddress
+
+	return nil
+}
+
+func (a *AntminerCGI) CheckLog() error {
+	GetLogResponse, err := queries.AntMinerCGILog(a.clientConnection, a.Config.Username, a.Config.Password, a.Miner.IPAddress)
+	if err != nil {
+		return err
+	}
+
+	a.rwMutex.Lock()
+	defer a.rwMutex.Unlock()
+
+	a.Log = GetLogResponse.Log
 
 	return nil
 }
