@@ -121,7 +121,7 @@ const renderTimelineItems = (activities: Activity[]) => {
   ))
 }
 
-const ActivityLogs = () => (
+const MinerLog = ({ log: string }) => (
   <Grid container spacing={6}>
     <Grid item xs={12}>
       <Card>
@@ -135,11 +135,12 @@ const ActivityLogs = () => (
             sx={{ height: 20, fontSize: '0.75rem', fontWeight: 500, borderRadius: '10px' }}
           />
           <Box mb={3} />
-          <Timeline>{renderTimelineItems(mockData)}</Timeline>
+
+          {/* <Timeline>{renderTimelineItems(mockData)}</Timeline> */}
         </CardContent>
       </Card>
     </Grid>
   </Grid>
 )
 
-export default ActivityLogs
+export default MinerLog

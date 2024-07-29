@@ -78,7 +78,7 @@ dotenv.config()
 // Get REMOTE_CONTROL_SERVER_URL from environment variables
 const remoteControlServerUrl = process.env.REMOTE_CONTROL_SERVER_URL
 
-export const remoteControlAPIService = axios.create({
+export const minerAPIService = axios.create({
   baseURL: `${remoteControlServerUrl}/api/miners`,
   headers: {
     'Content-Type': 'application/json'
@@ -86,7 +86,7 @@ export const remoteControlAPIService = axios.create({
 })
 
 export const fetchMinerInfo = async (macAddress: string) => {
-  const response = await remoteControlAPIService.post(`/detail`, { mac_address: macAddress })
+  const response = await minerAPIService.post(`/detail`, { mac_address: macAddress })
   // NOTE: insert only one
   const convertedResponse = convertResponse([response?.data?.data])
   return convertedResponse[0]
@@ -99,7 +99,7 @@ export const fetchMinerStats = async (
   window: number,
   windowUnit: string
 ) => {
-  const response = await remoteControlAPIService.post(`/timeseries/minerstats`, {
+  const response = await minerAPIService.post(`/timeseries/minerstats`, {
     mac_address: macAddress,
     interval: interval,
     interval_unit: intervalUnit,
@@ -117,7 +117,7 @@ export const fetchPoolStats = async (
   window: number,
   windowUnit: string
 ) => {
-  const response = await remoteControlAPIService.post(`/timeseries/poolstats`, {
+  const response = await minerAPIService.post(`/timeseries/poolstats`, {
     mac_address: macAddress,
     interval: interval,
     interval_unit: intervalUnit,

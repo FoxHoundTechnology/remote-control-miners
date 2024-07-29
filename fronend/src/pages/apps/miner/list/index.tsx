@@ -25,7 +25,7 @@ import CustomChip from 'src/@core/components/mui/chip'
 import { ThemeColor } from 'src/@core/layouts/types'
 
 import TableHeader from 'src/views/apps/miner/components/TableHeader'
-import { ExtractFields, fetchMinerList } from 'src/store/apps/miner'
+import { ExtractFields, fetchMinerList } from 'src/store/apps/miner/list'
 
 import { MinerType } from 'src/types/apps/minerTypes'
 

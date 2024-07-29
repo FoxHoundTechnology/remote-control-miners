@@ -14,7 +14,6 @@ import (
 	// "github.com/alitto/pond"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 
 	timeseries "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/influxdb"
 	postgres "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/postgres"
@@ -182,12 +181,12 @@ func main() {
 }
 
 func processFleets(
-	postgresDB *gorm.DB,
 	timeseriesRepo *miner_repo.MinerTimeSeriesRepository,
 	minerRepo *miner_repo.MinerRepository,
 	fleetRepo *fleet_repo.FleetRepository,
 	workerErrors chan error,
 ) {
+
 	fleets, err := fleetRepo.ListScannersByFleet()
 	if err != nil {
 		log.Println("Error getting fleet list:", err)
@@ -204,7 +203,7 @@ func processFleets(
 		// add a worker to the counter group
 		semaphore <- struct{}{}
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(10000 * time.Millisecond)
 
 		fleet := fleet
 
@@ -292,17 +291,17 @@ func processFleets(
 						return
 					}
 
-					err = antMinerCGI.CheckPools()
-					if err != nil {
-						workerErrors <- err
-						return
-					}
+					// err = antMinerCGI.CheckPools()
+					// if err != nil {
+					// 	workerErrors <- err
+					// 	return
+					// }
 
-					err = antMinerCGI.CheckConfig()
-					if err != nil {
-						workerErrors <- err
-						return
-					}
+					// err = antMinerCGI.CheckConfig()
+					// if err != nil {
+					// 	workerErrors <- err
+					// 	return
+					// }
 
 					newMinerModel := &miner_repo.Miner{
 						Miner: miner_domain.Miner{
@@ -370,6 +369,7 @@ func processFleets(
 			minerModelArr := make([]*miner_repo.Miner, 0, len(antMinerCGIModel))
 			for antMinerCGI := range antMinerCGIModel {
 				minerModelArr = append(minerModelArr, antMinerCGI)
+
 			}
 
 			fmt.Println("MINEROUTPUT", minerModelArr)
@@ -381,7 +381,6 @@ func processFleets(
 				return
 			}
 
-			//minerRepository.CreateMinersInBatch(minerModelArr)
 			err = logger.WriteIntToFile(len(minerModelArr), fleet.Name)
 			if err != nil {
 				workerErrors <- err
@@ -393,6 +392,9 @@ func processFleets(
 		}(fleet)
 
 	}
+
+	// flush the miner time series data
+
 }
 
 func inc(ip net.IP) {

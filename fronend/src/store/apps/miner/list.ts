@@ -6,6 +6,7 @@ const remoteControlServerUrl = process.env.REMOTE_CONTROL_SERVER_URL
 export const minerAPIService = axios.create({
   baseURL: `${remoteControlServerUrl}/api/miners`
 })
+
 // TODO: store management with zustand
 // TODO: enum map fo mode/status (with falsy values supports)
 // TODO: -- DUPLICATES --
@@ -52,7 +53,6 @@ const convertResponse = (response: any): MinerType[] => {
     return []
   }
 }
-// -- THE END OF DUPLICATES --
 
 export const fetchMinerList = async () => {
   const response = await minerAPIService.get('/list')
@@ -60,6 +60,7 @@ export const fetchMinerList = async () => {
   const convertedResponse = convertResponse(response?.data?.data) ?? []
   return { miners: convertedResponse }
 }
+
 
 // ========= Util functions for miner data =========
 export const ExtractFields = (data: MinerType[]): { [key: string]: string[] } => {
