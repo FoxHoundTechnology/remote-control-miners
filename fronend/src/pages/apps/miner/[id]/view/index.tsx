@@ -245,6 +245,8 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
                     <Link
                       href={`http://${minerDetailsQuery?.data?.ip}`}
                       underline='none'
+                      target='_blank'
+                      rel='noopener noreferrer'
                       sx={{ display: 'flex', alignItems: 'center' }}
                     >
                       <Typography variant='body2' sx={{ fontWeight: 600 }}>

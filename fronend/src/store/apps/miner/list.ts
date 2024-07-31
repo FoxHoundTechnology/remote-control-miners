@@ -9,7 +9,6 @@ export const minerAPIService = axios.create({
 
 // TODO: store management with zustand
 // TODO: enum map fo mode/status (with falsy values supports)
-// TODO: -- DUPLICATES --
 const convertResponse = (response: any): MinerType[] => {
   try {
     return response.map((item: any) => ({

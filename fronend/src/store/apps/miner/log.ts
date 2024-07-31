@@ -12,7 +12,9 @@ export const minerAPIService = axios.create({
 })
 
 export const fetchMinerLog = async (macAddress: string) => {
-    const response = await minerAPIService.post(`${remoteControlServerUrl}/log`)
+    const response = await minerAPIService.post(`/log`, {
+        mac_address: macAddress
+    })
 
     return response?.data?.data
 }
