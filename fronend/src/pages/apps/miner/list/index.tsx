@@ -597,7 +597,6 @@ const MinerList = () => {
           )}
           {data && (
             <DataGrid
-              autoHeight
               rows={filteredStore ?? []} // Change this line
               columns={columns}
               disableRowSelectionOnClick

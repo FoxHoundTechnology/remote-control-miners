@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	miner_domain "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/domain"
 	"gorm.io/gorm"
 )
 
@@ -153,6 +154,7 @@ func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 			miner.Temperature,
 		)
 	}
+
 	// Construct the SQL query
 	query := `
 			 INSERT INTO public.miners (
@@ -180,10 +182,93 @@ func (r *MinerRepository) UpdateMinersInBatch(miners []*Miner) error {
 	query = fmt.Sprintf(query, strings.Join(valueStrings, ","))
 
 	// TODO: POOL UPDATE
-
 	if err := tx.Exec(query, valueArgs...).Error; err != nil {
 		tx.Rollback()
 		return fmt.Errorf("error updating miners: %w", err)
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *MinerRepository) UpdatePoolsInBatch(miners []*Miner) error {
+	if len(miners) == 0 {
+		return nil
+	}
+	tx := r.db.Begin()
+	if tx.Error != nil {
+		return tx.Error
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	valueStrings := make([]string, 0)
+	valueArgs := make([]interface{}, 0)
+
+	for _, miner := range miners {
+		// Skip miners with no pools
+		if miner == nil || len(miner.Pools) == 0 {
+			continue
+		}
+
+		for i := 0; i < 3; i++ { // Assuming a maximum of 3 pools per miner
+			var pool Pool
+			if i < len(miner.Pools) {
+				pool = miner.Pools[i]
+			} else {
+				// If this pool index doesn't exist, use empty values
+				pool = Pool{Pool: miner_domain.Pool{}}
+			}
+
+			valueStrings = append(valueStrings, "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+			valueArgs = append(valueArgs,
+				miner.Miner.MacAddress,
+				i,
+				pool.Pool.Url,
+				pool.Pool.User,
+				pool.Pool.Pass,
+				pool.Pool.Status,
+				pool.Pool.Accepted,
+				pool.Pool.Rejected,
+				pool.Pool.Stale,
+				time.Now(),
+			)
+		}
+	}
+
+	if len(valueStrings) == 0 {
+		// No pools to update
+		tx.Rollback()
+		return nil
+	}
+
+	query := `
+    INSERT INTO public.pools (
+        miner_mac_address, index, url, user, pass, status, accepted, rejected, stale, updated_at
+    ) 
+    VALUES %s
+    ON CONFLICT (miner_mac_address, index) DO UPDATE SET
+        url = EXCLUDED.url,
+        user = EXCLUDED.user,
+        pass = EXCLUDED.pass,
+        status = EXCLUDED.status,
+        accepted = EXCLUDED.accepted,
+        rejected = EXCLUDED.rejected,
+        stale = EXCLUDED.stale,
+        updated_at = EXCLUDED.updated_at
+    `
+
+	query = fmt.Sprintf(query, strings.Join(valueStrings, ","))
+
+	if err := tx.Exec(query, valueArgs...).Error; err != nil {
+		tx.Rollback()
+		return fmt.Errorf("error updating pools: %w", err)
 	}
 
 	if err := tx.Commit().Error; err != nil {
