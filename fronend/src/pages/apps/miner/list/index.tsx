@@ -49,6 +49,14 @@ interface CellType {
   row: MinerType
 }
 
+export type FilterValue = {
+  client: string
+  minerType: string
+  status: string
+  location: string
+  search: string
+}
+
 const modeColors: ColorsType = {
   Normal: 'success',
   Sleep: 'warning',
@@ -83,7 +91,6 @@ const LinkStyled = styled(Link)(({ theme }) => ({
 // normal, sleep, lowpower, reboot, disable, setting, details, pool
 const RowOptions = ({ row, remoteControlCallback }: any) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-
   const rowOptionsOpen = Boolean(anchorEl)
 
   const handleRowOptionsClick = (event: MouseEvent<HTMLElement>) => {
@@ -185,106 +192,53 @@ const MinerList = () => {
     const response = await fetchMinerList()
     return response
   })
+
   const store = data?.miners ?? []
 
-  const initialFilters = {
+  const initialFilters: FilterValue = {
     client: '',
     minerType: '',
     status: '',
-    location: ''
+    location: '',
+    search: ''
   }
 
-  const [filters, setFilters] = useState(initialFilters)
-  const [value, setValue] = useState<string>('')
-
-  // WIP:  add the modal config UI
+  const [filters, setFilters] = useState<FilterValue>(initialFilters)
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 50 })
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
   const [openFilter, setOpenFilter] = useState<boolean>(false)
 
-  const [filteredStore, setFilteredStore] = useState(store)
-  // filter hander for the global search across all the columns
-  const handleSearchFilter = (value: string) => {
-    const lowercasedValue = value.toLowerCase().trim()
-    if (lowercasedValue === '') {
-      setFilteredStore(store)
-    } else {
-      const filteredData = store.filter((item: any) =>
-        [
-          // 'id',
-          'macAddress',
-          'ip',
-          // 'name',
-          // 'minerType',
-          // 'serialNumber',
-          'location',
-          'firmware'
-          // 'client',
-          // 'fleetName',
-          // 'ipRange'
-        ].some((key: any) => {
-          const val = item[key]
-          return val !== undefined && val.toString().toLowerCase().includes(lowercasedValue)
-        })
-      )
-      setFilteredStore(filteredData)
-    }
-  }
+  const filteredStore = useMemo(() => {
+    return store.filter(item => {
+      const matchesSearch =
+        filters.search === '' ||
+        ['macAddress', 'ip', 'location', 'firmware'].some(key =>
+          item[key]?.toString().toLowerCase().includes(filters.search.toLowerCase())
+        )
 
-  const handleFilterChange = (filterKey: keyof typeof filters) => (event: SelectChangeEvent) => {
-    const value = event.target.value
-
-    //setFilters(prev => ({ ...prev, [filterKey]: value }))
-    setFilters(prev => {
-      // If user selected 'reset' or '', return initial value for that filter
-      if (value === 'reset' || value === '') {
-        return { ...prev, [filterKey]: initialFilters[filterKey] }
-      }
-
-      // Otherwise, update the filter normally
-      else {
-        return { ...prev, [filterKey]: value }
-      }
-    })
-  }
-
-  useEffect(() => {
-    const lowercasedFilters = Object.keys(filters).reduce((acc: any, key: string) => {
-      acc[key] = filters[key as keyof typeof filters].toLowerCase().trim()
-
-      return acc
-    }, {} as typeof filters)
-
-    const filteredData = store?.filter((item: any) => {
-      return Object.keys(lowercasedFilters).every((key: any) => {
-        if (lowercasedFilters[key] === '' || lowercasedFilters[key] === 'reset') {
-          return true
-        }
-        const itemValue = item[key]?.toString().toLowerCase().trim()
-
-        return itemValue?.includes(lowercasedFilters[key])
+      const matchesFilters = Object.entries(filters).every(([key, value]) => {
+        if (key === 'search' || value === '' || value === 'reset') return true
+        return item[key]?.toString().toLowerCase().includes(value.toLowerCase())
       })
+
+      return matchesSearch && matchesFilters
     })
+  }, [store, filters])
 
-    setFilteredStore(filteredData)
+  const handleFilterChange =
+    (filterKey: keyof FilterValue) => (event: SelectChangeEvent | React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setFilters(prev => ({
+        ...prev,
+        [filterKey]: value === 'reset' ? initialFilters[filterKey] : value
+      }))
+    }
 
-    // TODO: add the stats update logic goes here
-  }, [filters])
-
-  const handleResetFilter = () => {
-    setFilters({
-      client: '',
-      minerType: '',
-      status: '',
-      location: ''
-    })
-  }
+  const handleResetFilter = () => setFilters(initialFilters)
 
   const toggleFilter = () => {
     setOpenFilter(!openFilter)
-    if (!openFilter) {
-      handleResetFilter()
-    }
+    if (openFilter) handleResetFilter()
   }
 
   /*
@@ -610,11 +564,11 @@ const MinerList = () => {
           </CardContent>
           <Divider />
           <TableHeader
+            filters={filters}
+            setFilters={setFilters}
+            initialFilters={initialFilters}
             toggleFilter={toggleFilter}
             openFilter={openFilter}
-            setValue={setValue}
-            value={value}
-            handleFilter={handleSearchFilter}
             rowSelectionModel={rowSelectionModel}
             setRowSelectionModel={setRowSelectionModel}
             remoteControlCallback={remoteControlCallback}
@@ -644,11 +598,10 @@ const MinerList = () => {
           {data && (
             <DataGrid
               autoHeight
-              rows={store ?? []}
+              rows={filteredStore ?? []} // Change this line
               columns={columns}
               disableRowSelectionOnClick
               checkboxSelection
-              // NOTE: only select the id of each row
               onRowSelectionModelChange={newRowSelectionModel => {
                 setRowSelectionModel(newRowSelectionModel)
               }}

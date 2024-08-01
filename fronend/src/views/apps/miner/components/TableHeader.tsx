@@ -1,31 +1,31 @@
+import { useState } from 'react'
+
 import { FormControl, InputAdornment, MenuItem } from '@mui/material'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import Select from '@mui/material/Select'
+import Select, { SelectChangeEvent } from '@mui/material/Select'
 import TextField from '@mui/material/TextField'
-import { useState } from 'react'
 
 import SearchIcon from '@mui/icons-material/Search'
 import SortIcon from '@mui/icons-material/Sort'
+
 import Icon from 'src/@core/components/icon'
 import { AppDispatch } from 'src/store'
 import ConfirmModal from 'src/pages/modals/confirm'
 import { Command } from 'src/store/apps/minerControl'
 
+import { FilterValue } from '../../../../pages/apps/miner/list'
+
 interface TableHeaderProps {
-  value: string
-  setValue: (val: string) => void
-
-  remoteControlCallback: (val: number[], command: Command) => void // NOTE: converstion from id to mac and send the dispatch
-
-  handleFilter: (val: string) => void
-  toggleFilter?: () => void
-  openFilter?: boolean
-
-  rowSelectionModel?: any
-  setRowSelectionModel?: any
+  filters: FilterValue
+  initialFilters: FilterValue
+  setFilters: React.Dispatch<React.SetStateAction<FilterValue>>
+  remoteControlCallback: (val: number[], command: Command) => void
+  toggleFilter: () => void
+  openFilter: boolean
+  rowSelectionModel: any
+  setRowSelectionModel: any
 }
-
 /*
   TODO:
   [ ] Add the toggle button for remote control 
@@ -33,27 +33,24 @@ interface TableHeaderProps {
 */
 
 const TableHeader = (props: TableHeaderProps) => {
-  const { handleFilter, value, setValue, remoteControlCallback, openFilter, toggleFilter, rowSelectionModel } = props
-  const [remoteControlSelected, SetRemoteControlSetelcted] = useState(false)
-
+  const { filters, setFilters, initialFilters, remoteControlCallback, openFilter, toggleFilter, rowSelectionModel } =
+    props
+  const [remoteControlSelected, setRemoteControlSelected] = useState(false)
   const [show, setShow] = useState(false)
-  const [command, setCommand] = useState<Command>() // normal, lowpower, sleep, reboot, config
+  const [command, setCommand] = useState<Command>()
 
   const remoteControlButtonHandler = () => {
-    SetRemoteControlSetelcted(!remoteControlSelected)
+    setRemoteControlSelected(!remoteControlSelected)
   }
 
-  // Update the search input state when the text field changes
-  const handleInputChange = (value: string | React.ChangeEvent<HTMLInputElement>) => {
-    if (typeof value === 'string') {
-      setValue(value) // store current input value
-      handleFilter(value) // apply filtering
-    } else {
-      const inputValue = (value.target as HTMLInputElement).value
-      setValue(inputValue) // store current input value
-      handleFilter(inputValue) // apply filtering
+  const handleFilterChange =
+    (filterKey: keyof FilterValue) => (event: SelectChangeEvent | React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setFilters(prev => ({
+        ...prev,
+        [filterKey]: value === 'reset' ? initialFilters[filterKey] : value
+      }))
     }
-  }
 
   const messageGenerator = () => {
     if (command === Command.LowPower) {
@@ -150,9 +147,8 @@ const TableHeader = (props: TableHeaderProps) => {
             Export
           </Button>
           <TextField
-            sx={{ ml: 0, mr: 2, pr: 3, pl: 3 }}
             size='small'
-            value={value}
+            value={filters.search}
             InputProps={{
               startAdornment: (
                 <InputAdornment position='start'>
@@ -161,7 +157,7 @@ const TableHeader = (props: TableHeaderProps) => {
               )
             }}
             placeholder='Search'
-            onChange={e => handleInputChange(e as React.ChangeEvent<HTMLInputElement>)}
+            onChange={event => handleFilterChange('search')(event as React.ChangeEvent<HTMLInputElement>)}
           />
         </Box>
       </Box>

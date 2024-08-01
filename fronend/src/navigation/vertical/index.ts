@@ -31,21 +31,6 @@ const navigation = (): VerticalNavItemsType => {
       title: 'Pools',
       icon: 'mdi:waves'
     },
-
-    {
-      sectionTitle: 'Power Control'
-    },
-    {
-      title: 'Power',
-      icon: 'mdi:transmission-tower'
-    },
-    {
-      sectionTitle: 'Financial'
-    },
-    {
-      title: 'Earnings',
-      icon: 'mdi:wallet'
-    },
     {
       sectionTitle: 'Tickets'
     },
