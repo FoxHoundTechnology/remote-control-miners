@@ -24,16 +24,16 @@ services:
       - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
       - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
 
-      - GOMAXPROCS=7 # Set the number of CPU cores for the Go application
+      - GOMAXPROCS=6
 
     deploy:
       resources:
         limits:
-          cpus: '7.0' # Maximum 2 CPU cores for the Go server
-          memory: '6g' # Maximum 4GB of memory for the Go server
+          cpus: '7.0'
+          memory: '6g'
         reservations:
-          cpus: '7.0' # Reserve at least 1 CPU core for the Go server
-          memory: '6g' # Reserve at least 2GB of memory for the Go server
+          cpus: '7.0'
+          memory: '6g'
     ports:
       - 8080:8080
     depends_on:

@@ -31,6 +31,8 @@ import (
 
 	routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers"
 
+	migration "github.com/FoxHoundTechnology/remote-control-miners/migration"
+
 	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
 	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/service"
 )
@@ -106,7 +108,7 @@ func main() {
 		fmt.Println("Error creating unique index for pools", err)
 	}
 
-	DevMigrate(postgresDB, configFile)
+	migration.DevMigrate(postgresDB, configFile)
 
 	router := gin.Default()
 	config := cors.DefaultConfig()
@@ -255,7 +257,6 @@ func processFleets(
 				clientConnection := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
 
 				go func(i int, ip net.IP) {
-
 					defer wg.Done()
 					// this client can be reused
 					newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_system_info.cgi", ip), nil)
@@ -367,6 +368,7 @@ func processFleets(
 					// feed the ARPResponses channel with the antMinerCGI object
 					antMinerCGIModel <- newMinerModel
 				}(i, ip)
+
 			} // end of the ARP request
 
 			wg.Wait()
