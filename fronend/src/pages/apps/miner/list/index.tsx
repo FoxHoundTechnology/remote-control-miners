@@ -1,4 +1,4 @@
-import { useState, useEffect, MouseEvent } from 'react'
+import { useState, useEffect, MouseEvent, useMemo } from 'react'
 
 import Link from 'next/link'
 
@@ -25,7 +25,7 @@ import CustomChip from 'src/@core/components/mui/chip'
 import { ThemeColor } from 'src/@core/layouts/types'
 
 import TableHeader from 'src/views/apps/miner/components/TableHeader'
-import { ExtractFields, fetchMinerList } from 'src/store/apps/miner'
+import { ExtractFields, fetchMinerList } from 'src/store/apps/miner/list'
 
 import { MinerType } from 'src/types/apps/minerTypes'
 
@@ -41,13 +41,20 @@ import { Skeleton } from '@mui/material'
 // TODO: enum for status/label/color map
 // TODO: seggregate the logic for remoteControlCallback into store management folder/component
 
-// TODO: --  DUPLICATES --
 interface ColorsType {
   [key: string]: ThemeColor
 }
 
 interface CellType {
   row: MinerType
+}
+
+export type FilterValue = {
+  client: string
+  minerType: string
+  status: string
+  location: string
+  search: string
 }
 
 const modeColors: ColorsType = {
@@ -67,13 +74,6 @@ const statusColors: ColorsType = {
   'Missing Hashboard Error': 'error',
   'PoolShare Error': 'error'
 }
-// TODO: -- end of DUPLICATE --
-
-// const minerModeObj: MinerModeType = {
-//   '1': 'warning',
-//   '3': 'info',
-//   '0': 'success'
-// }
 
 const LinkStyled = styled(Link)(({ theme }) => ({
   fontWeight: 600,
@@ -89,9 +89,8 @@ const LinkStyled = styled(Link)(({ theme }) => ({
 // NOTE:
 // Row options will be
 // normal, sleep, lowpower, reboot, disable, setting, details, pool
-const RowOptions = ({ row }: any) => {
+const RowOptions = ({ row, remoteControlCallback }: any) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-
   const rowOptionsOpen = Boolean(anchorEl)
 
   const handleRowOptionsClick = (event: MouseEvent<HTMLElement>) => {
@@ -102,12 +101,30 @@ const RowOptions = ({ row }: any) => {
     setAnchorEl(null)
   }
 
-  const handleReboot = () => {}
-  const handleSleep = () => {}
-  const handleUnrack = () => {}
-  const handleDisable = () => {}
-  const handleReactivate = () => {}
-  const handleDelete = () => {}
+  const handleReboot = () => {
+    remoteControlCallback([row.id], Command.Reboot)
+    handleRowOptionsClose()
+  }
+
+  const handleSleep = () => {
+    remoteControlCallback([row.id], Command.Sleep)
+    handleRowOptionsClose()
+  }
+
+  // const handleUnrack = () => {
+  //   remoteControlCallback([row.id], Command.Unrack)
+  //   handleRowOptionsClose()
+  // }
+
+  // const handleDisable = () => {
+  //   remoteControlCallback([row.id], Command.Disable)
+  //   handleRowOptionsClose()
+  // }
+
+  // const handleReactivate = () => {
+  //   remoteControlCallback([row.id], Command.Reactivate)
+  //   handleRowOptionsClose()
+  // }
 
   return (
     <>
@@ -147,17 +164,17 @@ const RowOptions = ({ row }: any) => {
           Sleep
         </MenuItem>
         {row?.status === 'disabled' || row?.status === 'unracked' ? (
-          <MenuItem onClick={handleReactivate} sx={{ '& svg': { mr: 2 } }}>
+          <MenuItem onClick={() => {}} sx={{ '& svg': { mr: 2 } }}>
             <Icon icon='mdi:restart' fontSize={20} />
             Reactivate
           </MenuItem>
         ) : (
           <>
-            <MenuItem disabled onClick={handleDisable} sx={{ '& svg': { mr: 2 } }}>
+            <MenuItem disabled onClick={() => {}} sx={{ '& svg': { mr: 2 } }}>
               <Icon icon='mdi:delete-outline' fontSize={20} />
               Disable
             </MenuItem>
-            <MenuItem disabled onClick={handleDelete} sx={{ '& svg': { mr: 2 } }}>
+            <MenuItem disabled onClick={() => {}} sx={{ '& svg': { mr: 2 } }}>
               <Icon icon='mdi:wifi-remove' fontSize={20} />
               Unrack
             </MenuItem>
@@ -168,195 +185,6 @@ const RowOptions = ({ row }: any) => {
   )
 }
 
-const columns: GridColDef[] = [
-  {
-    flex: 0.2,
-    minWidth: 180,
-    maxWidth: 180,
-    field: 'macAddress',
-
-    renderCell: ({ row }: CellType) => {
-      const { model, macAddress, ip } = row
-
-      // TODO: add the ip on hover
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Tooltip title={`${ip}`} arrow>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
-              <LinkStyled href={`/apps/miner/${macAddress}/view`}>{model}</LinkStyled>
-              <Typography noWrap variant='caption'>
-                {`@${macAddress}`}
-              </Typography>
-            </Box>
-          </Tooltip>
-        </Box>
-      )
-    }
-  },
-  {
-    flex: 0.2,
-    minWidth: 180,
-    field: 'client',
-    headerName: 'Client / Location',
-    renderCell: ({ row }: CellType) => {
-      return (
-        <Box>
-          <Typography noWrap>{row?.client}</Typography>
-          <Typography noWrap variant='caption'>
-            {`${row?.location}`}
-          </Typography>
-        </Box>
-      )
-    }
-  },
-  {
-    flex: 0.1,
-    minWidth: 90,
-    field: 'status',
-    headerName: 'Status',
-    renderCell: ({ row }: CellType) => {
-      // TODO: fix the status
-      const { status } = row
-      return (
-        <Tooltip title={''}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <CustomChip
-              skin='light'
-              size='small'
-              label={status}
-              color={statusColors[row?.status]}
-              sx={{ textTransform: 'capitalize' }}
-            />
-          </Box>
-        </Tooltip>
-      )
-    }
-  },
-  {
-    flex: 0.1,
-    minWidth: 120,
-    field: 'mode',
-    headerName: 'Mode',
-    renderCell: ({ row }: CellType) => {
-      // online, offline, lowpower, sleep, reboot, disable, warning
-      return (
-        <CustomChip
-          skin='light'
-          size='small'
-          label={row?.mode}
-          color={modeColors[row?.mode]}
-          sx={{ textTransform: 'capitalize' }}
-        />
-      )
-    }
-  },
-  {
-    flex: 0.1,
-    minWidth: 140,
-    field: 'hashRate',
-    headerName: 'Hashrate',
-    renderCell: ({ row }: CellType) => {
-      const thFormat = row?.hashRate ? Math.floor(row?.hashRate / 10) / 100 : 0
-
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography noWrap sx={{ color: 'text.primary', textTransform: 'capitalize' }}>
-            {thFormat}{' '}
-            <Typography ml={1} variant='caption'>
-              TH/s
-            </Typography>
-          </Typography>
-        </Box>
-      )
-    }
-  },
-  {
-    flex: 0.1,
-    minWidth: 80,
-    field: 'maxTemp',
-    headerName: 'Temp',
-    renderCell: ({ row }: CellType) => {
-      return (
-        <Tooltip title={`${row?.tempArr}`} arrow>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
-              {row?.maxTemp}°C
-            </Typography>
-          </Box>
-        </Tooltip>
-      )
-    }
-  },
-  {
-    flex: 0.1,
-    minWidth: 100,
-    field: 'maxFan',
-    headerName: 'Fan',
-    renderCell: ({ row }: CellType) => {
-      return (
-        <Tooltip title={`${row.fanArr}`} arrow>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
-              {row?.maxFan}RPM
-            </Typography>
-          </Box>
-        </Tooltip>
-      )
-    }
-  },
-  {
-    flex: 0.1,
-    minWidth: 120,
-    field: 'upTime',
-    headerName: 'Uptime',
-    renderCell: ({ row }: CellType) => {
-      const upTime = row?.upTime ? secondsToDHM(row.upTime) : 0
-
-      return (
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
-            {upTime}
-          </Typography>
-        </Box>
-      )
-    }
-  },
-  {
-    // TODO: add the time difference setter
-    flex: 0.2,
-    minWidth: 170,
-    field: 'lastUpdated',
-    headerName: 'Last Updated',
-    renderCell: ({ row }: CellType) => {
-      const lastUpdatedDate = row?.lastUpdated ? convertDateTime(row.lastUpdated).date : 'N/A'
-      const lastUpdatedTime = row?.lastUpdated ? convertDateTime(row.lastUpdated).time : 'N/A'
-      return (
-        <Typography noWrap variant='caption'>
-          {`${lastUpdatedTime}`}{' '}
-          <Typography noWrap variant='caption'>
-            | {lastUpdatedDate}
-          </Typography>
-        </Typography>
-      )
-    }
-  },
-  {
-    // config option
-    flex: 0.1,
-    minWidth: 110,
-    sortable: false,
-    field: 'actions',
-    headerName: '',
-    renderCell: ({ row }: CellType) => {
-      return (
-        <Box>
-          <RowOptions row={row} />
-        </Box>
-      )
-    }
-  }
-]
-
 // TODO: fix the search bar
 // TODO: separate queries from the components
 const MinerList = () => {
@@ -364,107 +192,55 @@ const MinerList = () => {
     const response = await fetchMinerList()
     return response
   })
+
   const store = data?.miners ?? []
 
-  const initialFilters = {
+  const initialFilters: FilterValue = {
     client: '',
     minerType: '',
     status: '',
-    location: ''
+    location: '',
+    search: ''
   }
 
-  const [filters, setFilters] = useState(initialFilters)
-  const [value, setValue] = useState<string>('')
-
-  // WIP:  add the modal config UI
+  const [filters, setFilters] = useState<FilterValue>(initialFilters)
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 50 })
   const [rowSelectionModel, setRowSelectionModel] = useState<GridRowSelectionModel>([])
   const [openFilter, setOpenFilter] = useState<boolean>(false)
 
-  const [filteredStore, setFilteredStore] = useState(store)
-  // filter hander for the global search across all the columns
-  const handleSearchFilter = (value: string) => {
-    const lowercasedValue = value.toLowerCase().trim()
-    if (lowercasedValue === '') {
-      setFilteredStore(store)
-    } else {
-      const filteredData = store.filter((item: any) =>
-        [
-          // 'id',
-          'macAddress',
-          'ip',
-          // 'name',
-          // 'minerType',
-          // 'serialNumber',
-          'location',
-          'firmware'
-          // 'client',
-          // 'fleetName',
-          // 'ipRange'
-        ].some((key: any) => {
-          const val = item[key]
-          return val !== undefined && val.toString().toLowerCase().includes(lowercasedValue)
-        })
-      )
-      setFilteredStore(filteredData)
-    }
-  }
+  const filteredStore = useMemo(() => {
+    return store.filter(item => {
+      const matchesSearch =
+        filters.search === '' ||
+        ['macAddress', 'ip', 'location', 'firmware'].some(key =>
+          item[key]?.toString().toLowerCase().includes(filters.search.toLowerCase())
+        )
 
-  const handleFilterChange = (filterKey: keyof typeof filters) => (event: SelectChangeEvent) => {
-    const value = event.target.value
-
-    //setFilters(prev => ({ ...prev, [filterKey]: value }))
-    setFilters(prev => {
-      // If user selected 'reset' or '', return initial value for that filter
-      if (value === 'reset' || value === '') {
-        return { ...prev, [filterKey]: initialFilters[filterKey] }
-      }
-
-      // Otherwise, update the filter normally
-      else {
-        return { ...prev, [filterKey]: value }
-      }
-    })
-  }
-
-  useEffect(() => {
-    const lowercasedFilters = Object.keys(filters).reduce((acc: any, key: string) => {
-      acc[key] = filters[key as keyof typeof filters].toLowerCase().trim()
-
-      return acc
-    }, {} as typeof filters)
-
-    const filteredData = store?.filter((item: any) => {
-      return Object.keys(lowercasedFilters).every((key: any) => {
-        if (lowercasedFilters[key] === '' || lowercasedFilters[key] === 'reset') {
-          return true
-        }
-        const itemValue = item[key]?.toString().toLowerCase().trim()
-
-        return itemValue?.includes(lowercasedFilters[key])
+      const matchesFilters = Object.entries(filters).every(([key, value]) => {
+        if (key === 'search' || value === '' || value === 'reset') return true
+        return item[key]?.toString().toLowerCase().includes(value.toLowerCase())
       })
+
+      return matchesSearch && matchesFilters
     })
+  }, [store, filters])
 
-    setFilteredStore(filteredData)
+  const handleFilterChange =
+    (filterKey: keyof FilterValue) => (event: SelectChangeEvent | React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value
+      setFilters(prev => ({
+        ...prev,
+        [filterKey]: value === 'reset' ? initialFilters[filterKey] : value
+      }))
+    }
 
-    // TODO: add the stats update logic goes here
-  }, [filters])
-
-  const handleResetFilter = () => {
-    setFilters({
-      client: '',
-      minerType: '',
-      status: '',
-      location: ''
-    })
-  }
+  const handleResetFilter = () => setFilters(initialFilters)
 
   const toggleFilter = () => {
     setOpenFilter(!openFilter)
-    if (!openFilter) {
-      handleResetFilter()
-    }
+    if (openFilter) handleResetFilter()
   }
+
   /*
 	  MacAddresses []string          `json:"mac_addresses"`
 	  Mode         miner_domain.Mode `json:"mode"`
@@ -488,6 +264,198 @@ const MinerList = () => {
       Command: command
     })
   }
+
+  const columns = useMemo<GridColDef[]>(
+    () => [
+      {
+        flex: 0.2,
+        minWidth: 180,
+        maxWidth: 180,
+        field: 'macAddress',
+
+        renderCell: ({ row }: CellType) => {
+          const { model, macAddress, ip } = row
+
+          // TODO: add the ip on hover
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Tooltip title={`${ip}`} arrow>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', flexDirection: 'column' }}>
+                  <LinkStyled href={`/apps/miner/${macAddress}/view`}>{model}</LinkStyled>
+                  <Typography noWrap variant='caption'>
+                    {`@${macAddress}`}
+                  </Typography>
+                </Box>
+              </Tooltip>
+            </Box>
+          )
+        }
+      },
+      {
+        flex: 0.2,
+        minWidth: 180,
+        field: 'client',
+        headerName: 'Client / Location',
+        renderCell: ({ row }: CellType) => {
+          return (
+            <Box>
+              <Typography noWrap>{row?.client}</Typography>
+              <Typography noWrap variant='caption'>
+                {`${row?.location}`}
+              </Typography>
+            </Box>
+          )
+        }
+      },
+      {
+        flex: 0.1,
+        minWidth: 90,
+        field: 'status',
+        headerName: 'Status',
+        renderCell: ({ row }: CellType) => {
+          // TODO: fix the status
+          const { status } = row
+          return (
+            <Tooltip title={''}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <CustomChip
+                  skin='light'
+                  size='small'
+                  label={status}
+                  color={statusColors[row?.status]}
+                  sx={{ textTransform: 'capitalize' }}
+                />
+              </Box>
+            </Tooltip>
+          )
+        }
+      },
+      {
+        flex: 0.1,
+        minWidth: 120,
+        field: 'mode',
+        headerName: 'Mode',
+        renderCell: ({ row }: CellType) => {
+          // online, offline, lowpower, sleep, reboot, disable, warning
+          return (
+            <CustomChip
+              skin='light'
+              size='small'
+              label={row?.mode}
+              color={modeColors[row?.mode]}
+              sx={{ textTransform: 'capitalize' }}
+            />
+          )
+        }
+      },
+      {
+        flex: 0.1,
+        minWidth: 140,
+        field: 'hashRate',
+        headerName: 'Hashrate',
+        renderCell: ({ row }: CellType) => {
+          const thFormat = row?.hashRate ? Math.floor(row?.hashRate / 10) / 100 : 0
+
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography noWrap sx={{ color: 'text.primary', textTransform: 'capitalize' }}>
+                {thFormat}{' '}
+                <Typography ml={1} variant='caption'>
+                  TH/s
+                </Typography>
+              </Typography>
+            </Box>
+          )
+        }
+      },
+      {
+        flex: 0.1,
+        minWidth: 80,
+        field: 'maxTemp',
+        headerName: 'Temp',
+        renderCell: ({ row }: CellType) => {
+          return (
+            <Tooltip title={`${row?.tempArr}`} arrow>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
+                  {row?.maxTemp}°C
+                </Typography>
+              </Box>
+            </Tooltip>
+          )
+        }
+      },
+      {
+        flex: 0.1,
+        minWidth: 100,
+        field: 'maxFan',
+        headerName: 'Fan',
+        renderCell: ({ row }: CellType) => {
+          return (
+            <Tooltip title={`${row.fanArr}`} arrow>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
+                  {row?.maxFan}RPM
+                </Typography>
+              </Box>
+            </Tooltip>
+          )
+        }
+      },
+      {
+        flex: 0.1,
+        minWidth: 120,
+        field: 'upTime',
+        headerName: 'Uptime',
+        renderCell: ({ row }: CellType) => {
+          const upTime = row?.upTime ? secondsToDHM(row.upTime) : 0
+
+          return (
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography noWrap sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
+                {upTime}
+              </Typography>
+            </Box>
+          )
+        }
+      },
+      {
+        // TODO: add the time difference setter
+        flex: 0.2,
+        minWidth: 170,
+        field: 'lastUpdated',
+        headerName: 'Last Updated',
+        renderCell: ({ row }: CellType) => {
+          const lastUpdatedDate = row?.lastUpdated ? convertDateTime(row.lastUpdated).date : 'N/A'
+          const lastUpdatedTime = row?.lastUpdated ? convertDateTime(row.lastUpdated).time : 'N/A'
+          return (
+            <Typography noWrap variant='caption'>
+              {`${lastUpdatedTime}`}{' '}
+              <Typography noWrap variant='caption'>
+                | {lastUpdatedDate}
+              </Typography>
+            </Typography>
+          )
+        }
+      },
+      {
+        // config option
+        flex: 0.1,
+        minWidth: 110,
+        sortable: false,
+        field: 'actions',
+        headerName: '',
+        renderCell: ({ row }: CellType) => {
+          return (
+            <Box>
+              <RowOptions row={row} remoteControlCallback={remoteControlCallback} />
+            </Box>
+          )
+        }
+      }
+    ],
+    [remoteControlCallback]
+  )
 
   return (
     <Grid container spacing={3}>
@@ -596,11 +564,11 @@ const MinerList = () => {
           </CardContent>
           <Divider />
           <TableHeader
+            filters={filters}
+            setFilters={setFilters}
+            initialFilters={initialFilters}
             toggleFilter={toggleFilter}
             openFilter={openFilter}
-            setValue={setValue}
-            value={value}
-            handleFilter={handleSearchFilter}
             rowSelectionModel={rowSelectionModel}
             setRowSelectionModel={setRowSelectionModel}
             remoteControlCallback={remoteControlCallback}
@@ -629,12 +597,10 @@ const MinerList = () => {
           )}
           {data && (
             <DataGrid
-              autoHeight
-              rows={store ?? []}
+              rows={filteredStore ?? []} // Change this line
               columns={columns}
               disableRowSelectionOnClick
               checkboxSelection
-              // NOTE: only select the id of each row
               onRowSelectionModelChange={newRowSelectionModel => {
                 setRowSelectionModel(newRowSelectionModel)
               }}

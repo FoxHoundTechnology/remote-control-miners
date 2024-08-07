@@ -17,6 +17,10 @@ const (
 	CreateUniqueMinerIndexSQL = `
 	CREATE UNIQUE INDEX idx_mac_address_fleet_id ON miners (mac_address, fleet_id);
     `
+
+	CreateUniquePoolIndexSQL = `
+	CREATE UNIQUE INDEX idx_miner_mac_pool_index ON pools (miner_mac_address, index);
+	`
 )
 
 type Fan []int
@@ -44,8 +48,10 @@ type Miner struct {
 
 type Pool struct {
 	gorm.Model
-	Pool    miner_domain.Pool `gorm:"embedded;"`
-	MinerID uint              `gorm:"index"`
+	Index           int
+	Pool            miner_domain.Pool `gorm:"embedded"`
+	MinerMacAddress string            `gorm:"type:varchar(17)"`
+	Miner           Miner             `gorm:"foreignKey:MinerMacAddress;references:MacAddress;constraint:OnUpdate:CASCADE,OnDelete:CASCADE"`
 }
 
 type MinerLog struct {

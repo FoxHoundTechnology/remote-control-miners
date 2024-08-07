@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	timeseries "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/influxdb"
 	postgres "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/postgres"
 
 	http_auth "github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
@@ -29,6 +30,8 @@ import (
 	scanner_repo "github.com/FoxHoundTechnology/remote-control-miners/internal/infrastructure/database/repositories/scanner"
 
 	routes "github.com/FoxHoundTechnology/remote-control-miners/internal/interface/routers"
+
+	migration "github.com/FoxHoundTechnology/remote-control-miners/migration"
 
 	ant_miner_cgi_queries "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/queries"
 	ant_miner_cgi_service "github.com/FoxHoundTechnology/remote-control-miners/internal/application/miner/ant_miner_cgi/service"
@@ -52,14 +55,20 @@ var INTERVAL_MINS = 5
 var MAX_WORKERS = 10
 
 func main() {
-
 	postgresDB := postgres.Init()
-	// InfluxDBConnectionSettings := timeseries.Init()
+	influxDB := timeseries.Init()
+
 	dbConfig, err := postgresDB.DB()
 	if err != nil {
 		log.Fatalf("Failed to get the database connection: %v", err)
 	}
 	dbConfig.SetMaxIdleConns(50)
+
+	configFile, err := os.Open("fxhnd.json")
+	if err != nil {
+		log.Fatalf("Failed to open file: %s", err)
+	}
+	defer configFile.Close()
 
 	// Set connection pool settings
 	err = postgresDB.AutoMigrate(
@@ -94,12 +103,12 @@ func main() {
 		fmt.Println("Error creating unique index for miners", err)
 	}
 
-	configFile, err := os.Open("fxhnd.json")
+	err = postgresDB.Exec(miner_repo.CreateUniquePoolIndexSQL).Error
 	if err != nil {
-		log.Fatalf("Failed to open file: %s", err)
+		fmt.Println("Error creating unique index for pools", err)
 	}
-	defer configFile.Close()
-	DevMigrate(postgresDB, configFile)
+
+	migration.DevMigrate(postgresDB, configFile)
 
 	router := gin.Default()
 	config := cors.DefaultConfig()
@@ -121,8 +130,6 @@ func main() {
 
 	// TODO: separate the worker logic from the main function
 	//---------------------------WORKER LOGIC--------------------------------
-	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
-	// minerTimeSeriesRepository := miner_repo.NewMinerTimeSeriesRepository(InfluxDBConnectionSettings)
 
 	// panicHandler := func(p interface{}) {
 	// 	log.Println("worker paniced %v", p)
@@ -140,7 +147,7 @@ func main() {
 	workerErrors := make(chan error)
 	defer close(workerErrors)
 
-	ticker := time.NewTicker(300 * time.Second)
+	ticker := time.NewTicker(time.Duration(INTERVAL_MINS))
 	defer ticker.Stop()
 
 	// Create a context that can be cancelled
@@ -151,18 +158,14 @@ func main() {
 	var mtx sync.Mutex
 
 	for range ticker.C {
-
 		mtx.Lock()
 		fmt.Println("Running scheduled tasks...")
 
 		select {
-
 		// If the inProgressFlag channel is empty, proceed
 		case inProgressFlag <- struct{}{}:
-
 			go func() {
-
-				processFleets(postgresDB, fleetRepo, workerErrors)
+				processFleets(postgresDB, influxDB, workerErrors)
 				<-inProgressFlag // remove the flag
 				mtx.Unlock()
 
@@ -173,14 +176,12 @@ func main() {
 						}
 					}
 				}()
-
 			}()
 
 		// If the inProgress flag channel is full (size = 1), skip the current iteration
 		default:
 			fmt.Println("Skipping the current iteration...")
 			mtx.Unlock()
-
 		}
 
 	}
@@ -188,14 +189,18 @@ func main() {
 
 func processFleets(
 	postgresDB *gorm.DB,
-	fleetRepo *fleet_repo.FleetRepository,
+	influxDB *timeseries.InfluxDBConnectionSettings,
 	workerErrors chan error,
 ) {
-	minerRepository := miner_repo.NewMinerRepository(postgresDB)
+
+	minerRepo := miner_repo.NewMinerRepository(postgresDB)
+	fleetRepo := fleet_repo.NewFleetRepository(postgresDB)
+
+	minerTimeSeriesRepo := miner_repo.NewMinerTimeSeriesRepository(influxDB)
+
 	fleets, err := fleetRepo.ListScannersByFleet()
 	if err != nil {
 		log.Println("Error getting fleet list:", err)
-
 		// TODO: notify with alert layer 4
 		return
 	}
@@ -217,7 +222,7 @@ func processFleets(
 			// remove the worker from the counter group
 			defer func() { <-semaphore }()
 
-			log.Printf("Processing scanner ID: %d\n", fleet.Name)
+			log.Println("Processing scanner ID: %d\n", fleet.Name)
 			log.Println("fleet start ip", fleet.Scanner.Scanner.StartIP)
 			log.Println("fleet end ip", fleet.Scanner.Scanner.EndIP)
 
@@ -248,12 +253,11 @@ func processFleets(
 
 				time.Sleep(100 * time.Millisecond) // Adjust the duration as needed
 				wg.Add(1)
+
 				clientConnection := http_auth.NewTransport(fleet.Scanner.Config.Username, fleet.Scanner.Config.Password)
 
 				go func(i int, ip net.IP) {
-
 					defer wg.Done()
-
 					// this client can be reused
 					newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_system_info.cgi", ip), nil)
 					if err != nil {
@@ -301,11 +305,11 @@ func processFleets(
 						return
 					}
 
-					err = antMinerCGI.CheckConfig()
-					if err != nil {
-						workerErrors <- err
-						return
-					}
+					// err = antMinerCGI.CheckConfig()
+					// if err != nil {
+					// 	workerErrors <- err
+					// 	return
+					// }
 
 					newMinerModel := &miner_repo.Miner{
 						Miner: miner_domain.Miner{
@@ -345,24 +349,26 @@ func processFleets(
 						newMinerModel.Temperature[i] = max
 					}
 
-					if newMinerModel.Pools != nil {
-						newMinerModel.Pools = make([]miner_repo.Pool, len(newMinerModel.Pools))
+					if len(antMinerCGI.Pools) > 0 {
+						newMinerModel.Pools = make([]miner_repo.Pool, len(antMinerCGI.Pools))
 						for i, pool := range antMinerCGI.Pools {
-							newMinerModel.Pools[i].Pool = miner_domain.Pool{
-								Url:      pool.Url,
-								User:     pool.User,
-								Pass:     pool.Pass,
-								Status:   pool.Status,
-								Accepted: pool.Accepted,
-								Rejected: pool.Rejected,
-								Stale:    pool.Stale,
+							newMinerModel.Pools[i] = miner_repo.Pool{
+								Pool: miner_domain.Pool{
+									Url:      pool.Url,
+									User:     pool.User,
+									Pass:     pool.Pass,
+									Status:   pool.Status,
+									Accepted: pool.Accepted,
+									Rejected: pool.Rejected,
+									Stale:    pool.Stale,
+								},
 							}
 						}
 					}
-
 					// feed the ARPResponses channel with the antMinerCGI object
 					antMinerCGIModel <- newMinerModel
 				}(i, ip)
+
 			} // end of the ARP request
 
 			wg.Wait()
@@ -373,18 +379,45 @@ func processFleets(
 			minerModelArr := make([]*miner_repo.Miner, 0, len(antMinerCGIModel))
 			for antMinerCGI := range antMinerCGIModel {
 				minerModelArr = append(minerModelArr, antMinerCGI)
+
+				// Batch write to the InfluxDB
+				minerTimeSeriesRepo.WriteMinerData(
+					miner_repo.MinerTimeSeries{
+						MacAddress: antMinerCGI.Miner.MacAddress,
+						HashRate:   int(antMinerCGI.Stats.HashRate),
+						TempSensor: antMinerCGI.Temperature,
+						FanSensor:  antMinerCGI.Fan,
+					},
+				)
+
+				if len(antMinerCGI.Pools) > 0 {
+					minerTimeSeriesRepo.WritePoolData(
+						miner_repo.PoolTimeSeries{
+							MacAddress: antMinerCGI.Miner.MacAddress,
+							Accepted:   antMinerCGI.Pools[0].Pool.Accepted,
+							Rejected:   antMinerCGI.Pools[0].Pool.Rejected,
+							Stale:      antMinerCGI.Pools[0].Pool.Stale,
+						},
+					)
+				}
 			}
 
 			fmt.Println("MINEROUTPUT", minerModelArr)
 
-			err := minerRepository.UpdateMinersInBatch(minerModelArr)
+			err := minerRepo.UpdateMinersInBatch(minerModelArr)
 			if err != nil {
 				workerErrors <- err
 				fmt.Println("Error updating miners in batch", err)
 				return
 			}
 
-			//minerRepository.CreateMinersInBatch(minerModelArr)
+			err = minerRepo.UpdatePoolsInBatch(minerModelArr)
+			if err != nil {
+				workerErrors <- err
+				fmt.Println("Error updating pools in batch", err)
+				return
+			}
+
 			err = logger.WriteIntToFile(len(minerModelArr), fleet.Name)
 			if err != nil {
 				workerErrors <- err
@@ -396,6 +429,9 @@ func processFleets(
 		}(fleet)
 
 	}
+
+	wg.Wait()
+	minerTimeSeriesRepo.Close()
 }
 
 func inc(ip net.IP) {

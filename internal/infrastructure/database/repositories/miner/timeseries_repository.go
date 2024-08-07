@@ -21,112 +21,137 @@ import (
 // TODO: data race condition
 // TODO: RW mutex
 
+var TIMEOUT_DURATION = 1 * time.Minute
+
 type MinerTimeSeriesRepository struct {
-	db                  timeseries_database.InfluxDBConnectionSettings
-	writer              influxDB_api.WriteAPI
-	rw                  *sync.RWMutex
-	timeseriesMinerData []MinerTimeSeries
-	timeseriesPoolData  []PoolTimeSeries
+	db            *timeseries_database.InfluxDBConnectionSettings
+	writer        influxDB_api.WriteAPI
+	minerDataChan chan MinerTimeSeries
+	poolDataChan  chan PoolTimeSeries
+	wg            sync.WaitGroup
+	ctx           context.Context
+	cancel        context.CancelFunc
 }
 
-func NewMinerTimeSeriesRepository(db timeseries_database.InfluxDBConnectionSettings) *MinerTimeSeriesRepository {
+func NewMinerTimeSeriesRepository(db *timeseries_database.InfluxDBConnectionSettings) *MinerTimeSeriesRepository {
+	ctx, cancel := context.WithCancel(context.Background())
+	r := &MinerTimeSeriesRepository{
+		db:            db,
+		writer:        db.Client.WriteAPI(db.Org, db.Bucket),
+		minerDataChan: make(chan MinerTimeSeries, 100),
+		poolDataChan:  make(chan PoolTimeSeries, 100),
+		ctx:           ctx,
+		cancel:        cancel,
+	}
 
-	return &MinerTimeSeriesRepository{
-		db:                  db,
-		writer:              db.Client.WriteAPI(db.Org, db.Bucket),
-		rw:                  new(sync.RWMutex),
-		timeseriesMinerData: []MinerTimeSeries{},
-		timeseriesPoolData:  []PoolTimeSeries{},
+	r.wg.Add(2)
+	go r.processMinerData()
+	go r.processPoolData()
+
+	return r
+}
+
+func (r *MinerTimeSeriesRepository) WriteMinerData(data MinerTimeSeries) {
+	select {
+	case r.minerDataChan <- data:
+	case <-time.After(5 * time.Second):
+		fmt.Println("Warning: WriteMinerData timed out")
 	}
 }
 
-func (r *MinerTimeSeriesRepository) WriteMinerData(data MinerTimeSeries) error {
-
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	r.timeseriesMinerData = append(r.timeseriesMinerData, data)
-
-	return nil
+func (r *MinerTimeSeriesRepository) WritePoolData(data PoolTimeSeries) {
+	select {
+	case r.poolDataChan <- data:
+	case <-time.After(5 * time.Second):
+		fmt.Println("Warning: WritePoolData timed out")
+	}
 }
 
-func (r *MinerTimeSeriesRepository) FlushMinerData() error {
-
-	fmt.Println("flushing miner data with length", len(r.timeseriesMinerData))
-
-	for _, data := range r.timeseriesMinerData {
-
-		temperatureStringArray := make([]string, len(data.TempSensor))
-		for index, temperature := range data.TempSensor {
-			temperatureStringArray[index] = fmt.Sprintf("%d", temperature)
+func (r *MinerTimeSeriesRepository) processMinerData() {
+	defer r.wg.Done()
+	for {
+		select {
+		case data, ok := <-r.minerDataChan:
+			if !ok {
+				return
+			}
+			r.writeMinerDataPoint(data)
+		case <-r.ctx.Done():
+			return
+		case <-time.After(TIMEOUT_DURATION):
+			// Periodic flush
+			r.writer.Flush()
 		}
+	}
+}
 
-		fanStringArray := make([]string, len(data.FanSensor))
-		for index, fan_speed := range data.FanSensor {
-			fanStringArray[index] = fmt.Sprintf("%d", fan_speed)
+func (r *MinerTimeSeriesRepository) processPoolData() {
+	defer r.wg.Done()
+	for {
+		select {
+		case data, ok := <-r.poolDataChan:
+			if !ok {
+				return
+			}
+			r.writePoolDataPoint(data)
+		case <-r.ctx.Done():
+			return
+		case <-time.After(TIMEOUT_DURATION):
+			// Periodic flush
+			r.writer.Flush()
 		}
+	}
+}
 
-		fields := map[string]interface{}{
-			"hashrate":     data.HashRate,
-			"temp_sensors": strings.Join(temperatureStringArray, ","),
-			"fan_sensors":  strings.Join(fanStringArray, ","),
-		}
-
-		tag := map[string]string{
-			"mac_address": data.MacAddress,
-		}
-
-		point := influxDB.NewPoint(
-			"miner_data",
-			tag,
-			fields,
-			time.Now(),
-		)
-		r.writer.WritePoint(point)
+func (r *MinerTimeSeriesRepository) writeMinerDataPoint(data MinerTimeSeries) {
+	temperatureStringArray := make([]string, len(data.TempSensor))
+	for i, temp := range data.TempSensor {
+		temperatureStringArray[i] = fmt.Sprintf("%d", temp)
 	}
 
+	fanStringArray := make([]string, len(data.FanSensor))
+	for i, fan := range data.FanSensor {
+		fanStringArray[i] = fmt.Sprintf("%d", fan)
+	}
+
+	fields := map[string]interface{}{
+		"hashrate":     data.HashRate,
+		"temp_sensors": strings.Join(temperatureStringArray, ","),
+		"fan_sensors":  strings.Join(fanStringArray, ","),
+	}
+
+	tag := map[string]string{
+		"mac_address": data.MacAddress,
+	}
+
+	point := influxDB.NewPoint("miner_data", tag, fields, time.Now())
+	r.writer.WritePoint(point)
+}
+
+func (r *MinerTimeSeriesRepository) writePoolDataPoint(data PoolTimeSeries) {
+	fields := map[string]interface{}{
+		"accepted": data.Accepted,
+		"rejected": data.Rejected,
+		"stale":    data.Stale,
+	}
+
+	tag := map[string]string{
+		"mac_address": data.MacAddress,
+	}
+
+	point := influxDB.NewPoint("pool_data", tag, fields, time.Now())
+	r.writer.WritePoint(point)
+}
+
+func (r *MinerTimeSeriesRepository) Close() {
+	r.cancel() // Signal all goroutines to stop
+	close(r.minerDataChan)
+	close(r.poolDataChan)
+	r.wg.Wait() // Wait for all goroutines to finish
 	r.writer.Flush()
-	r.timeseriesMinerData = nil
-
-	return nil
 }
 
-func (r *MinerTimeSeriesRepository) WritePoolData(data PoolTimeSeries) error {
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	r.timeseriesPoolData = append(r.timeseriesPoolData, data)
-	return nil
-}
-
-func (r *MinerTimeSeriesRepository) FlushPoolData() error {
-
-	for _, data := range r.timeseriesPoolData {
-
-		fields := map[string]interface{}{
-			"accepted": data.Accepted,
-			"rejected": data.Rejected,
-			"stale":    data.Stale,
-		}
-
-		tag := map[string]string{
-			"mac_address": data.MacAddress,
-		}
-
-		point := influxDB.NewPoint(
-			"pool_data",
-			tag,
-			fields,
-			time.Now(),
-		)
-		r.writer.WritePoint(point)
-	}
-
-	r.writer.Flush()
-	r.timeseriesPoolData = nil
-	return nil
-}
-
+// ------------------------------------------------------------
 // NOTE: mac_address is null in the response object
 func (r *MinerTimeSeriesRepository) ReadMinerData(
 	macAddress string,

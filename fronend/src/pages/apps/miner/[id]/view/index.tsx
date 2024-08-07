@@ -30,9 +30,12 @@ import PoolStatsChart from 'src/views/charts/poolStatsChart'
 import NotificationSettings from 'src/views/apps/miner/components/NotificationSettings'
 
 import RecentPoolStatsChart from 'src/views/charts/recentPoolStatsChart'
-import { fetchMinerInfo, fetchMinerStats, fetchPoolStats } from 'src/store/apps/minerDetails'
+
+import { fetchMinerInfo, fetchMinerStats, fetchPoolStats } from 'src/store/apps/miner/details'
+import { fetchMinerLog } from 'src/store/apps/miner/log'
+
 import TabPanel from '@mui/lab/TabPanel'
-import ActivityLogs from 'src/views/apps/miner/components/activityLogs'
+import MinerLog from 'src/views/apps/miner/components/minerLog'
 
 // TODO: R&D for server component
 // TODO: R&D for periodic requests with different params, using react-query and zustand
@@ -107,7 +110,10 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
     cacheTime: 0
   })
 
-  console.log('miner detail data in view: ', minerDetailsQuery.data)
+  const minerLogQuery = useQuery('minerLog', () => fetchMinerLog(macAddress), {
+    staleTime: 0,
+    cacheTime: 0
+  })
 
   const minerStatsQuery = useQuery<MinerTimeSeriesDataResponse>(
     'minerStats',
@@ -127,17 +133,18 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
     }
   )
 
-  // const [isLoading, setIsLoading] = useState<boolean>(false)
-
   // Aggregate loading and error states
-  const isLoading = minerDetailsQuery.isLoading || minerStatsQuery.isLoading || poolStatsQuery.isLoading
+  const isLoading =
+    minerDetailsQuery.isLoading || minerStatsQuery.isLoading || poolStatsQuery.isLoading || minerLogQuery.isLoading
   const isError =
     minerDetailsQuery.isError ||
     minerStatsQuery.isError ||
     poolStatsQuery.isError ||
+    minerLogQuery.isError ||
     !minerDetailsQuery.data ||
     !minerStatsQuery.data ||
-    !poolStatsQuery.data
+    !poolStatsQuery.data ||
+    !minerLogQuery.data
 
   // Process data only when all queries have succeeded
   const { hashrateArr, tempSensorArr, fanSensorArr, timestampArr } = useMemo(() => {
@@ -178,8 +185,6 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
   if (isError) {
     return <div>Error loading data. Please try again later.</div>
   }
-
-  // useEffect(() => {}, [activeTab])
 
   return (
     <Grid container spacing={6}>
@@ -240,6 +245,8 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
                     <Link
                       href={`http://${minerDetailsQuery?.data?.ip}`}
                       underline='none'
+                      target='_blank'
+                      rel='noopener noreferrer'
                       sx={{ display: 'flex', alignItems: 'center' }}
                     >
                       <Typography variant='body2' sx={{ fontWeight: 600 }}>
@@ -364,7 +371,7 @@ const minerDetailsView = ({ macAddress }: minerDetailsViewProps) => {
                   </TabPanel>
                 </Grid>
                 <Grid item xs={12} mt={6}>
-                  <ActivityLogs />
+                  <MinerLog log={minerLogQuery?.data} />
                 </Grid>
               </Grid>
             </TabContext>

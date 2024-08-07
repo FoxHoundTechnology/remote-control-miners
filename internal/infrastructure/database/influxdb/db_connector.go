@@ -16,7 +16,7 @@ type InfluxDBConnectionSettings struct {
 }
 
 // TODO: automate instantiation with init
-func Init() InfluxDBConnectionSettings {
+func Init() *InfluxDBConnectionSettings {
 
 	org := os.Getenv("INFLUXDB_ORG")
 	bucket := os.Getenv("INFLUXDB_BUCKET")
@@ -26,7 +26,7 @@ func Init() InfluxDBConnectionSettings {
 	client := influxDB.NewClientWithOptions(url, token,
 		influxDB.DefaultOptions())
 
-	return InfluxDBConnectionSettings{
+	return &InfluxDBConnectionSettings{
 		Client: client,
 		Org:    org,
 		Bucket: bucket,

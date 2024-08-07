@@ -7,8 +7,6 @@ import (
 	"net/http"
 
 	"github.com/FoxHoundTechnology/remote-control-miners/pkg/http_auth"
-
-	"github.com/sirupsen/logrus"
 )
 
 // cgi-bin/get_system_info.cgi: Get system information.
@@ -42,21 +40,11 @@ func AntMinerCGIGetSystemInfo(clientConnection *http_auth.DigestTransport, usern
 
 	newRequest, err := http.NewRequest("POST", fmt.Sprintf("http://%s/cgi-bin/get_system_info.cgi", ipAddress), nil)
 	if err != nil {
-
-		logrus.WithFields(logrus.Fields{
-			"error":      err,
-			"newRequest": newRequest,
-		}).Info("Error creating new request")
-
 		return nil, err
 	}
 
 	resp, err := clientConnection.RoundTrip(newRequest)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-			"resp":  resp,
-		}).Info("Error creating new request")
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -69,9 +57,6 @@ func AntMinerCGIGetSystemInfo(clientConnection *http_auth.DigestTransport, usern
 	var rawGetSystemInfoResponse RawGetSystemInfoResponse
 	err = json.Unmarshal(body, &rawGetSystemInfoResponse)
 	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Info("Error unmarshalling response body")
 		return nil, err
 	}
 
