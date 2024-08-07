@@ -3,6 +3,7 @@ package terminal
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 type FleetConfig struct {
@@ -43,7 +44,9 @@ type Condition struct {
 }
 
 func LoadFleetConfig(filename string) (*FleetConfig, error) {
-	file, err := os.Open(filename)
+	filePath := filepath.Join("..", filename)
+
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
